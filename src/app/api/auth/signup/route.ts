@@ -1,6 +1,7 @@
 import { authErrorToHttp, credentialsSchema } from "@/lib/auth-errors";
 import { getAppUrl } from "@/lib/env";
 import { readJson, route } from "@/lib/http";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 /**
@@ -9,6 +10,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
  * If a project does require confirmation, `signedIn` is false and the page says so.
  */
 export const POST = route(async (request: Request) => {
+  await enforceRateLimit(request, "signUp");
   const { email, password } = credentialsSchema.parse(await readJson(request));
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.auth.signUp({
