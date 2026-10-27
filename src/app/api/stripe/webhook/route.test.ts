@@ -61,6 +61,11 @@ describe("POST /api/stripe/webhook", async () => {
     expect(fakeDeps.confirmPayment).toHaveBeenCalledWith("cs_test", "pi_test");
   });
 
+  it("accepts events signed with any of several configured secrets", async () => {
+    vi.stubEnv("STRIPE_WEBHOOK_SECRET", `whsec_platform,${SECRET}`);
+    expect((await POST(post(payload, sign(payload)))).status).toBe(200);
+  });
+
   it("returns 500 so Stripe retries when processing fails", async () => {
     vi.mocked(fakeDeps.confirmPayment).mockRejectedValueOnce(new Error("db down"));
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});

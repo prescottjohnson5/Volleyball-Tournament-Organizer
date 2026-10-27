@@ -1,5 +1,5 @@
 import type Stripe from "stripe";
-import { getStripeWebhookSecret, MissingEnvError } from "@/lib/env";
+import { getStripeWebhookSecrets, MissingEnvError } from "@/lib/env";
 import { jsonError } from "@/lib/http";
 import { getStripe } from "@/lib/stripe/client";
 import { createWebhookDeps } from "@/lib/stripe/webhook-deps";
@@ -15,13 +15,22 @@ export async function POST(request: Request) {
   if (!signature) return jsonError(400, "Missing Stripe-Signature header.");
   const payload = await request.text();
 
-  let event: Stripe.Event;
+  let event: Stripe.Event | undefined;
   try {
-    event = getStripe().webhooks.constructEvent(payload, signature, getStripeWebhookSecret());
+    const stripe = getStripe();
+    for (const secret of getStripeWebhookSecrets()) {
+      try {
+        event = stripe.webhooks.constructEvent(payload, signature, secret);
+        break;
+      } catch {
+        // Try the next configured secret (platform vs Connect endpoint).
+      }
+    }
   } catch (error) {
     if (error instanceof MissingEnvError) return jsonError(503, error.message);
-    return jsonError(400, "Invalid Stripe signature.");
+    throw error;
   }
+  if (!event) return jsonError(400, "Invalid Stripe signature.");
 
   try {
     const outcome = await handleStripeEvent(event, createWebhookDeps());

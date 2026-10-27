@@ -3,6 +3,7 @@ import {
   getAppUrl,
   getPlatformFeePercent,
   getStripeSecretKey,
+  getStripeWebhookSecrets,
   getSupabasePublicEnv,
   MissingEnvError,
   missingEnv,
@@ -31,6 +32,15 @@ describe("env", () => {
     expect(() => getStripeSecretKey()).toThrow(/test-mode/);
     vi.stubEnv("STRIPE_SECRET_KEY", "sk_test_abc");
     expect(getStripeSecretKey()).toBe("sk_test_abc");
+  });
+
+  it("accepts one or several comma-separated webhook secrets", () => {
+    vi.stubEnv("STRIPE_WEBHOOK_SECRET", "whsec_a");
+    expect(getStripeWebhookSecrets()).toEqual(["whsec_a"]);
+    vi.stubEnv("STRIPE_WEBHOOK_SECRET", "whsec_a, whsec_b");
+    expect(getStripeWebhookSecrets()).toEqual(["whsec_a", "whsec_b"]);
+    vi.stubEnv("STRIPE_WEBHOOK_SECRET", " , ");
+    expect(() => getStripeWebhookSecrets()).toThrow(MissingEnvError);
   });
 
   it("prefers NEXT_PUBLIC_APP_URL and strips trailing slashes", () => {

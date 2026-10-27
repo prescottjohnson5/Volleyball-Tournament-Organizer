@@ -63,8 +63,17 @@ export function getStripeSecretKey(): string {
   return key;
 }
 
-export function getStripeWebhookSecret(): string {
-  return required("STRIPE_WEBHOOK_SECRET");
+/**
+ * Webhook signing secrets. Several may be given, comma-separated: in production the platform
+ * endpoint and the Connect endpoint each have their own secret.
+ */
+export function getStripeWebhookSecrets(): string[] {
+  const secrets = required("STRIPE_WEBHOOK_SECRET")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (secrets.length === 0) throw new MissingEnvError("STRIPE_WEBHOOK_SECRET");
+  return secrets;
 }
 
 /**
