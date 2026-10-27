@@ -1,8 +1,9 @@
-import { getAppUrl } from "@/lib/env";
+import { getAppUrl, getPlatformFeePercent } from "@/lib/env";
 import { HttpError, readJson, route } from "@/lib/http";
 import { buildCheckoutParams } from "@/lib/registration/checkout";
 import { registrationSchema } from "@/lib/registration/schema";
 import { getStripe } from "@/lib/stripe/client";
+import { getPayoutAccount, stripeErrorToHttp } from "@/lib/stripe/connect";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { countPaidTeams } from "@/lib/tournaments/server";
 
@@ -24,6 +25,11 @@ export const POST = route(async (request: Request, { params }: Context) => {
   if (tournament.status !== "registration") throw new HttpError(409, "Registration for this tournament is closed.");
   if ((await countPaidTeams(db, tournament.id)) >= tournament.max_teams) {
     throw new HttpError(409, "This tournament is full.");
+  }
+  // Destination charge: the fee goes to the organizer's Stripe Express account.
+  const payoutAccount = await getPayoutAccount(db, tournament.organizer_id);
+  if (!payoutAccount) {
+    throw new HttpError(409, "The organizer has not finished setting up payments yet. Please try again later.");
   }
 
   const { data: sameName, error: nameError } = await db
@@ -59,6 +65,7 @@ export const POST = route(async (request: Request, { params }: Context) => {
         captainEmail: input.captainEmail,
         appUrl: getAppUrl(new URL(request.url).origin),
         now: new Date(),
+        destination: { accountId: payoutAccount, feePercent: getPlatformFeePercent() },
       }),
       { idempotencyKey: `checkout-${team.id}` },
     );
@@ -70,6 +77,6 @@ export const POST = route(async (request: Request, { params }: Context) => {
   } catch (cause) {
     // Do not leave a half-created registration behind (team_private cascades).
     await db.from("teams").delete().eq("id", team.id);
-    throw cause;
+    throw stripeErrorToHttp(cause);
   }
 });

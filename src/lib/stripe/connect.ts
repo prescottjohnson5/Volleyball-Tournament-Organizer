@@ -19,6 +19,12 @@ export async function getOrganizerProfile(db: Db, organizerId: string): Promise<
   return data;
 }
 
+/** The connected account that registration payments for this organizer go to, or null if not ready. */
+export async function getPayoutAccount(db: Db, organizerId: string): Promise<string | null> {
+  const profile = await getOrganizerProfile(db, organizerId);
+  return profile?.stripe_account_id && profile.stripe_charges_enabled ? profile.stripe_account_id : null;
+}
+
 /**
  * Returns the organizer's Express account id, creating the account on first use. The Stripe
  * idempotency key means a double click cannot create two accounts.
