@@ -27,6 +27,7 @@ export type OrganizerProfileRow = {
   stripe_account_id: string | null;
   stripe_charges_enabled: boolean;
   stripe_details_submitted: boolean;
+  is_sandbox: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -46,6 +47,7 @@ export type TournamentRow = {
   registration_fee_cents: number;
   currency: string;
   status: TournamentStatus;
+  is_sandbox: boolean;
   version: number;
   champion_team_id: string | null;
   started_at: string | null;
@@ -133,7 +135,7 @@ export type Database = {
         OrganizerProfileRow,
         Optional<
           OrganizerProfileRow,
-          "stripe_account_id" | "stripe_charges_enabled" | "stripe_details_submitted" | "created_at" | "updated_at"
+          "stripe_account_id" | "stripe_charges_enabled" | "stripe_details_submitted" | "is_sandbox" | "created_at" | "updated_at"
         >
       >;
       tournaments: Table<
@@ -145,6 +147,7 @@ export type Database = {
           | "best_of"
           | "currency"
           | "status"
+          | "is_sandbox"
           | "version"
           | "champion_team_id"
           | "started_at"
