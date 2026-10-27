@@ -5,9 +5,10 @@ A full-stack web app for organizing volleyball tournaments. Organizers create to
 > **Status: in development.** Items marked with a checked box below are working end to end. The rest are
 > planned or in progress. Current progress: both tournament formats, the scoring rules, schedule generation
 > and the demo page work without any keys and are covered by unit tests (including full simulated
-> tournaments for 3 to 33 teams). Organizer sign-up, tournament create/edit/delete and starting a tournament
-> are built and tested against the real SQL in an in-memory Postgres, but have not yet been verified against
-> a live Supabase project.
+> tournaments for 3 to 33 teams). Organizer sign-up, tournament create/edit/delete, starting a tournament,
+> team registration with QR code, Stripe Checkout and the payment webhook are built and covered by automated
+> tests (SQL runs in an in-memory Postgres; webhook signatures are verified in tests), but have not yet been
+> verified against a live Supabase project or Stripe account.
 
 ## Features
 
