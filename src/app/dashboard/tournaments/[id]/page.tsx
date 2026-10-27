@@ -7,9 +7,12 @@ import { formatCents } from "@/lib/money";
 import { FORMAT_LABELS, formatEventDate, PAYMENT_LABELS, STATUS_LABELS } from "@/lib/tournaments/labels";
 import { toTournamentInput } from "@/lib/tournaments/schema";
 import { getFormat } from "@/lib/formats";
+import { loadTournamentView } from "@/lib/data/tournament-view";
 import { getPublicBaseUrl } from "@/lib/request-origin";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { TournamentForm } from "../TournamentForm";
 import { DeleteTournamentButton } from "./DeleteTournamentButton";
+import { OrganizerMatches } from "./OrganizerMatches";
 import { RegenerateCaptainLink } from "./RegenerateCaptainLink";
 import { SharePanel } from "./SharePanel";
 import { StartTournamentButton } from "./StartTournamentButton";
@@ -44,6 +47,10 @@ export default async function TournamentDashboardPage({ params }: { params: Prom
           {FORMAT_LABELS[tournament.format]} · best of {tournament.best_of} · {formatCents(tournament.registration_fee_cents, tournament.currency)} per team
         </p>
       </section>
+
+      {tournament.status !== "registration" && (
+        <OrganizerMatches initialView={await loadTournamentView(await createSupabaseServerClient(), tournament)} />
+      )}
 
       <SharePanel slug={tournament.slug} baseUrl={await getPublicBaseUrl()} />
 
