@@ -29,7 +29,7 @@ export function TryItButton({ label = "Try it for real", className = "btn-primar
         {busy ? "Setting up your sandbox…" : label}
       </button>
       {error && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="rounded-md bg-white px-2 py-1 text-sm text-red-700">
           {error}
         </p>
       )}
