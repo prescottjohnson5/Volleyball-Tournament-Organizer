@@ -36,7 +36,7 @@ export function BracketView({ view }: { view: TournamentView }) {
   const bracketMatches = view.matches.filter((m) => m.phase === "bracket");
   if (bracketMatches.length === 0) {
     return (
-      <p className="card text-sm text-ink-muted">
+      <p className="empty-state">
         {view.tournament.format === "pool_to_single_elim"
           ? "The playoff bracket is created automatically when every pool match is finished."
           : "The bracket appears when the organizer starts the tournament."}

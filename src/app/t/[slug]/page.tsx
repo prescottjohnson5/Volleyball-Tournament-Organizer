@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { BackLink } from "@/components/BackLink";
 import { SetupNotice } from "@/components/SetupNotice";
 import { SandboxBanner } from "@/components/SandboxBanner";
 import { LiveTournament } from "@/components/tournament/LiveTournament";
-import { getPublicTournament, getTournamentView } from "@/lib/data/public";
+import { getOrganizer } from "@/lib/auth";
+import { getPublicTournament } from "@/lib/data/public";
+import { loadTournamentView } from "@/lib/data/tournament-view";
 import { missingEnv } from "@/lib/env";
+import { createSupabasePublicClient } from "@/lib/supabase/public";
 
 export const dynamic = "force-dynamic";
 
@@ -25,23 +29,34 @@ export default async function PublicTournamentPage({ params }: Props) {
   if (missing.length > 0) return <SetupNotice missing={missing} />;
 
   const { slug } = await params;
-  const view = await getTournamentView(slug);
-  if (!view) notFound();
+  const db = createSupabasePublicClient();
+  const tournament = await getPublicTournament(slug, db);
+  if (!tournament) notFound();
+  const [view, organizer] = await Promise.all([loadTournamentView(db, tournament), getOrganizer()]);
+  // Only the tournament's own organizer sees the way into its management page.
+  const isOwner = organizer?.id === tournament.organizer_id;
 
   return (
-    <div className="space-y-4">
-      {view.tournament.isSandbox && <SandboxBanner />}
-      {view.tournament.status === "registration" && (
-        <div className="card flex flex-wrap items-center justify-between gap-3 border-teal/60 bg-teal/10">
-          <p className="text-sm text-ink">
-            Registration is open: {view.teams.length} of {view.tournament.maxTeams} teams so far.
-          </p>
-          <Link href={`/t/${slug}/register`} className="btn-primary">
-            Register a team
+    <div className="space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <BackLink href="/tournaments">All tournaments</BackLink>
+        {isOwner && (
+          <Link href={`/dashboard/tournaments/${tournament.id}`} className="btn-secondary min-h-9 py-1">
+            Manage
           </Link>
-        </div>
-      )}
-      <LiveTournament initialView={view} />
+        )}
+      </div>
+      {view.tournament.isSandbox && <SandboxBanner />}
+      <LiveTournament
+        initialView={view}
+        callToAction={
+          view.tournament.status === "registration" && view.teams.length < view.tournament.maxTeams ? (
+            <Link href={`/t/${slug}/register`} className="btn-primary w-full sm:w-auto">
+              Register a team
+            </Link>
+          ) : null
+        }
+      />
     </div>
   );
 }

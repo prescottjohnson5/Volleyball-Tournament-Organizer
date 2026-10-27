@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
+import { BackLink } from "@/components/BackLink";
 import { SandboxBanner } from "@/components/SandboxBanner";
 import { SetupNotice } from "@/components/SetupNotice";
 import { countPublicPaidTeams, getPublicTournament } from "@/lib/data/public";
@@ -42,11 +42,12 @@ export default async function RegisterPage({
     (await getPayoutAccount(createSupabaseAdminClient(), tournament.organizer_id)) !== null;
 
   return (
-    <div className="mx-auto max-w-lg space-y-5">
+    <div className="mx-auto max-w-lg space-y-6">
+      <BackLink href={`/t/${tournament.slug}`}>Tournament page</BackLink>
       {tournament.is_sandbox && <SandboxBanner />}
       <header className="space-y-1">
-        <p className="text-sm font-medium text-teal-300">Team registration</p>
-        <h1 className="text-2xl font-bold">{tournament.name}</h1>
+        <p className="text-sm font-semibold text-teal-300">Register a team</p>
+        <h1 className="text-3xl font-extrabold">{tournament.name}</h1>
         <p className="text-ink-muted">
           {formatEventDate(tournament.event_date)} · {tournament.location}
         </p>
@@ -84,11 +85,6 @@ export default async function RegisterPage({
         </p>
       )}
 
-      <p className="text-center text-sm">
-        <Link href={`/t/${tournament.slug}`} className="link">
-          View the tournament page
-        </Link>
-      </p>
     </div>
   );
 }
