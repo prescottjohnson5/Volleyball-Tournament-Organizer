@@ -1,11 +1,19 @@
 # Setup Steps (things you do by hand)
 
-Everything here is a one-time manual step that the code cannot do for you. Follow the sections in
-order. All commands are for **Windows PowerShell**, run from the project folder
-(`Volleyball-Tournament-Organizer`). You do **not** need the Supabase CLI.
+Everything here is a one-time manual step that the code cannot do for you. All commands are for
+**Windows PowerShell**, run from the project folder (`Volleyball-Tournament-Organizer`). You do
+**not** need the Supabase CLI.
+
+There are two ways to run the app:
+
+- **Supabase only (recommended, Parts A to D).** No payments and no email setup. Registration is
+  free and confirmed at once, organizers are signed in right after sign-up, and visitors can press
+  **Try it for real** to get a temporary sandbox without an account. This is what a reviewer needs.
+- **With payments (Part E, optional).** Adds Stripe test-mode registration fees and Stripe Connect
+  payouts. Everything in Parts A to D still applies.
 
 > **Never paste keys into chat, commit them, or share screenshots of them.** They only go in
-> `.env.local`, which Git ignores.
+> `.env.local` (which Git ignores) and in Vercel's environment variable settings.
 
 ---
 
@@ -23,12 +31,13 @@ order. All commands are for **Windows PowerShell**, run from the project folder
    ```powershell
    npm run dev
    ```
-   Pages that need keys show a yellow **Setup needed** box listing the missing variable names.
-   Open http://localhost:3000/setup at any time to see which variables are still missing.
+   The home page and http://localhost:3000/demo (a simulated tournament) work without keys. Pages
+   that need keys show a yellow **Setup needed** box listing the missing variable names. Open
+   http://localhost:3000/setup at any time to see which variables are still missing.
 
 ---
 
-## Part B — Supabase (database, organizer accounts, live updates)
+## Part B — Supabase only (database, organizer accounts, sandbox, live updates)
 
 ### B1. Create the project
 1. Go to https://supabase.com and sign in (the free plan is fine).
@@ -37,7 +46,7 @@ order. All commands are for **Windows PowerShell**, run from the project folder
 3. Wait until the project dashboard finishes setting up (about 2 minutes).
 
 ### B2. Create the tables (run the SQL migrations)
-Run the four files in `supabase/migrations/` **in order**: `0001`, `0002`, `0003`, `0004`.
+Run the seven files in `supabase/migrations/` **in order**, from `0001` to `0007`.
 
 For each file:
 1. In VS Code, open the file (for example `supabase/migrations/0001_schema.sql`), press
@@ -52,15 +61,35 @@ What each file does:
 |---|---|
 | `0001_schema.sql` | Creates the tables |
 | `0002_rls.sql` | Turns on Row Level Security: anyone can read public data, nobody can write from the browser |
-| `0003_functions.sql` | Adds the two database functions the server uses for safe multi-row writes |
+| `0003_functions.sql` | Database functions the server uses for safe multi-row writes |
 | `0004_realtime.sql` | Turns on Realtime for `tournaments`, `teams`, `matches` and `match_sets` (safe to re-run) |
+| `0005_free_registration.sql` | Free registration (no payment step) and tournaments without a fee |
+| `0006_rate_limits.sql` | Shared counters for per-IP rate limits |
+| `0007_sandbox.sql` | Sandbox organizers and their limits (1 tournament, 8 teams) |
+
+**Already ran `0001`–`0004` for an earlier version?** Just run `0005`, `0006` and `0007`. They are
+safe to run more than once.
 
 ### B3. Check that Realtime is on
 1. In Supabase, open **Database** → **Publications**.
 2. Click **supabase_realtime**. The tables `tournaments`, `teams`, `matches` and `match_sets`
    should be switched on. If not, run `0004_realtime.sql` again.
 
-### B4. Copy the Supabase keys into `.env.local`
+### B4. Configure sign-in (no confirmation emails, sandbox on)
+1. Open **Authentication** → **Sign In / Providers**.
+2. Under **User Signups**, turn **on** **Allow anonymous sign-ins**. This powers the
+   **Try it for real** button (a temporary sandbox account, deleted after 24 hours). Click **Save**.
+3. On the same page, open the **Email** provider and turn **off** **Confirm email**, then **Save**.
+   Organizers are then signed in the moment they create an account, and the app never needs to
+   send an email. (If you leave it on, sign-up still works, but the organizer has to click a link
+   that Supabase emails them, and Supabase's built-in email only sends a few emails per hour.)
+4. Open **Authentication** → **URL Configuration**:
+   - Set **Site URL** to `http://localhost:3000` for now (you change it to your Vercel address in
+     Part D).
+   - Under **Redirect URLs**, click **Add URL** and add `http://localhost:3000/**`. In Part D you
+     also add your Vercel address.
+
+### B5. Copy the keys into `.env.local`
 1. Create your local env file from the template:
    ```powershell
    Copy-Item .env.example .env.local
@@ -76,39 +105,92 @@ What each file does:
      (On older projects, the legacy **service_role** key works too.) This key bypasses all
      security rules: it is only ever read on the server and must never be shared.
 4. Set `NEXT_PUBLIC_APP_URL=http://localhost:3000`.
-5. Save the file, then stop (`Ctrl+C`) and restart `npm run dev`. Environment variables are only
+5. Make a random `CRON_SECRET` (it protects the daily sandbox cleanup). Run this in PowerShell and
+   paste the output after `CRON_SECRET=`:
+   ```powershell
+   node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
+   ```
+6. Leave `PAYMENTS_ENABLED` and all `STRIPE_` lines empty.
+7. Save the file, then stop (`Ctrl+C`) and restart `npm run dev`. Environment variables are only
    read when the dev server starts.
 
-### B5. Configure organizer sign-up
-1. In Supabase, open **Authentication** → **URL Configuration**.
-2. Set **Site URL** to `http://localhost:3000`.
-3. Under **Redirect URLs**, click **Add URL** and add `http://localhost:3000/**` (the `**` wildcard
-   lets the confirmation link carry the page to return to, for example
-   `/auth/callback?next=/dashboard`).
-4. Optional, for faster local testing: open **Authentication** → **Sign In / Providers** →
-   **Email** and turn off **Confirm email**. New organizers can then sign in straight away.
-   If you leave it on, Supabase emails a confirmation link (its built-in email service only
-   sends a few emails per hour).
-
-### B6. Try it
-1. Open http://localhost:3000/signup and create an organizer account.
-2. You land on the dashboard. Click **New tournament** and create one.
-3. In Supabase, open **Table Editor** → `tournaments` to see the row.
+### B6. Try it locally
+1. Open http://localhost:3000 and click **Try it for real**. You land on the organizer dashboard
+   with a yellow **Sandbox: data is deleted daily.** banner.
+2. Click **New tournament**, fill it in (sandbox tournaments allow up to 8 teams) and save.
+3. Click **Copy link** under *Registration link*, open it in a private window and register a team.
+   Your private captain link appears immediately. Register at least 3 teams with different names.
+4. Continue with Part C to play the tournament.
+5. To test a real organizer account, open http://localhost:3000/signup in a private window, create an
+   account and check that you land straight on the dashboard (no email needed).
 
 ---
 
-## Part C — Stripe test mode (registration payments)
+## Part C — Run a tournament end to end (scores and live updates)
+
+1. With at least **3** registered teams, click **Start tournament** → **Yes, start** on the organizer
+   dashboard. The schedule is generated and the *Matches* list appears.
+2. Open the public page (**Public page** link, or `/t/<slug>`) on your phone or in another window.
+   It shows **Live updates on** with a green dot.
+3. Open a captain link for a team with a match marked **Up next**. Enter the first set's score
+   (for example 25 and 20 indoors) and click **Save set 1**.
+4. Without refreshing, the public page and the organizer dashboard show the new score within about a
+   second. Invalid scores (for example 25-24) are rejected with an explanation.
+5. To correct a score, on the dashboard click **Edit score** on that match, change the numbers and
+   click **Save score**.
+
+**If the public page says "Reconnecting (refreshing every 15s)":** Realtime is not enabled for the
+tables. Re-run `supabase/migrations/0004_realtime.sql` and check Part B3. Scores still appear, just
+up to 15 seconds late.
+
+---
+
+## Part D — Deploy to Vercel (Supabase only)
+
+1. Go to https://vercel.com, sign in with GitHub and click **Add New…** → **Project**. Import the
+   `Volleyball-Tournament-Organizer` repository. Keep the detected **Next.js** settings.
+2. Before clicking **Deploy**, open **Environment Variables** and add
+   `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` and
+   `CRON_SECRET` (the same values as in `.env.local`, or a new random `CRON_SECRET`). Do **not** add
+   `PAYMENTS_ENABLED` or any `STRIPE_` variable. Click **Deploy** and wait for it to finish.
+3. Copy your site address (for example `https://volleyball-tournament-organizer.vercel.app`). In
+   Vercel → **Settings** → **Environment Variables**, add `NEXT_PUBLIC_APP_URL` with that address
+   (no trailing slash).
+4. Supabase → **Authentication** → **URL Configuration**:
+   - Set **Site URL** to your Vercel address, for example
+     `https://volleyball-tournament-organizer.vercel.app`.
+   - Under **Redirect URLs**, add `https://<your-vercel-address>/**`. Keep
+     `http://localhost:3000/**` so local development still works.
+   - Optional, for Vercel preview deployments: also add
+     `https://*-<your-vercel-team-or-username>.vercel.app/**`.
+5. Vercel → **Deployments** → the latest deployment → **⋯** → **Redeploy**, so the new variables
+   take effect.
+6. Check the daily cleanup: Vercel → **Settings** → **Cron Jobs** lists `/api/cron/cleanup`
+   (it comes from `vercel.json` and runs once a day at 04:00 UTC). Vercel sends `CRON_SECRET`
+   with each run automatically. To run it once by hand, click **Run** next to the job; its result
+   appears in the deployment's **Logs**.
+7. Repeat Part B6 and Part C on your phone using the Vercel address.
+
+---
+
+## Part E — Optional: registration fees with Stripe (test mode)
 
 Everything here uses Stripe **test mode**: no real money moves, and the app refuses live keys.
+Sandbox tournaments stay free even when payments are on.
 
-### C1. Get your test secret key
+### E1. Turn payments on
+Set `PAYMENTS_ENABLED=true` in `.env.local` (and later in Vercel). With it on, the fee field, the
+payout setup panel and Stripe Checkout appear. Set it back to empty to turn payments off again;
+existing tournaments then register teams for free.
+
+### E2. Get your test secret key
 1. Create a free account at https://dashboard.stripe.com/register (no business details are needed
    for test mode).
 2. Make sure the dashboard is in **test mode** (the "Test mode" / sandbox toggle at the top).
 3. Open **Developers** → **API keys**. Click **Reveal test key** next to **Secret key** (it starts
    with `sk_test_`) and paste it into `.env.local` as `STRIPE_SECRET_KEY`.
 
-### C2. Install the Stripe CLI on Windows (to receive webhooks locally)
+### E3. Install the Stripe CLI on Windows (to receive webhooks locally)
 Stripe tells the app "this payment succeeded" by calling a webhook. Your laptop is not reachable from
 the internet, so the Stripe CLI forwards those calls to it.
 1. Open https://github.com/stripe/stripe-cli/releases/latest and download the file ending in
@@ -121,7 +203,7 @@ the internet, so the Stripe CLI forwards those calls to it.
    ```
    A browser tab opens; click **Allow access**.
 
-### C3. Forward webhooks and copy the signing secret
+### E4. Forward webhooks and copy the signing secret
 1. In the same PowerShell window (keep it open while you test), run:
    ```powershell
    .\stripe.exe listen --forward-to localhost:3000/api/stripe/webhook
@@ -134,7 +216,7 @@ the internet, so the Stripe CLI forwards those calls to it.
 `stripe listen` also forwards events from connected accounts (such as `account.updated`), so one
 command covers everything locally.
 
-### C4. Turn on Stripe Connect (one time, for the platform)
+### E5. Turn on Stripe Connect (one time, for the platform)
 Registration fees are paid into each organizer's own Stripe Express account (a "destination
 charge"), so your Stripe account must be a Connect platform, even in test mode.
 1. In the Stripe dashboard (test mode), open **Connect** from the left menu (or search for
@@ -147,7 +229,8 @@ charge"), so your Stripe account must be a Connect platform, even in test mode.
 3. Optional platform fee: add `STRIPE_PLATFORM_FEE_PERCENT=5` to `.env.local` to keep 5% of each
    registration. Leave it empty for no fee. Restart `npm run dev` after changing it.
 
-### C5. Set up payouts as an organizer (test data)
+### E6. Set up payouts as an organizer (test data)
+Use a real organizer account (Part B6 step 5): sandbox organizers never see payments.
 1. Open http://localhost:3000/dashboard. The yellow **Set up payouts** box is at the top. Click
    **Set up payouts with Stripe**.
 2. Stripe's Express onboarding opens. In test mode, use test data:
@@ -160,12 +243,11 @@ charge"), so your Stripe account must be a Connect platform, even in test mode.
    If it still says *Finish payout setup*, click **Continue Stripe setup** and complete any
    remaining step. (Status is re-checked every time you open the dashboard.)
 
-If clicking the button shows an error starting with `Stripe:`, read it: it usually means step C4
+If clicking the button shows an error starting with `Stripe:`, read it: it usually means step E5
 (Connect sign-up or branding) is not finished.
 
-### C6. Make a test registration
-1. Sign in at http://localhost:3000/dashboard, open a tournament and click **Copy link** under
-   *Registration link* (or scan the QR code with your phone if your phone can reach your computer).
+### E7. Make a test registration
+1. Create a tournament with a fee, open it and click **Copy link** under *Registration link*.
 2. Fill in a team name, your name and an email, then click **Pay … and register**.
 3. On the Stripe page, pay with the test card `4242 4242 4242 4242`, any future expiry date (for
    example `12/34`), any 3-digit CVC and any postal code.
@@ -185,57 +267,22 @@ printed, and that you restarted `npm run dev`.
 Useful test cards: `4000 0000 0000 9995` (declined, insufficient funds),
 `4000 0025 0000 3155` (asks for 3-D Secure authentication).
 
----
-
-## Part D — Run a tournament end to end (scores and live updates)
-
-1. Register at least **3** teams using Part C6 (use a different team name each time). Keep each
-   captain link (open them in different browser profiles or a private window).
-2. On the organizer dashboard, click **Start tournament** → **Yes, start**. The schedule is
-   generated and the *Matches* list appears.
-3. Open the public page (**Public page** link, or `/t/<slug>`) on your phone or in another window.
-   It shows **Live updates on** with a green dot.
-4. Open a captain link for a team with a match marked **Up next**. Enter the first set's score
-   (for example 25 and 20 indoors) and click **Save set 1**.
-5. Without refreshing, the public page and the organizer dashboard show the new score within about a
-   second. Invalid scores (for example 25-24) are rejected with an explanation.
-6. To correct a score, on the dashboard click **Edit score** on that match, change the numbers and
-   click **Save score**.
-
-**If the public page says "Reconnecting (refreshing every 15s)":** Realtime is not enabled for the
-tables. Re-run `supabase/migrations/0004_realtime.sql` and check Part B3. Scores still appear, just
-up to 15 seconds late.
-
----
-
-## Part E — Deploy to Vercel (optional)
-
-Do this after everything works locally.
-
-1. Go to https://vercel.com, sign in with GitHub and click **Add New…** → **Project**. Import the
-   `Volleyball-Tournament-Organizer` repository. Keep the detected **Next.js** settings.
-2. Before clicking **Deploy**, open **Environment Variables** and add every variable from your
-   `.env.local` **except** `STRIPE_WEBHOOK_SECRET` and `NEXT_PUBLIC_APP_URL` (you get those in the
-   next steps). Click **Deploy** and wait for it to finish.
-3. Copy your site address (for example `https://volleyball-tournament-organizer.vercel.app`). In
-   Vercel → **Settings** → **Environment Variables**, add `NEXT_PUBLIC_APP_URL` with that address
-   (no trailing slash).
-4. Supabase → **Authentication** → **URL Configuration**: set **Site URL** to your Vercel address and
-   add `https://<your-vercel-address>/**` under **Redirect URLs**.
-5. Stripe dashboard (test mode) → **Developers** → **Webhooks** → **Add endpoint**:
+### E8. Payments on Vercel
+1. In Vercel, add `PAYMENTS_ENABLED=true`, `STRIPE_SECRET_KEY` and (optionally)
+   `STRIPE_PLATFORM_FEE_PERCENT`.
+2. Stripe dashboard (test mode) → **Developers** → **Webhooks** → **Add endpoint**:
    - Endpoint URL: `https://<your-vercel-address>/api/stripe/webhook`
    - Listen to: **Events on your account**
    - Events: `checkout.session.completed`, `checkout.session.expired`,
      `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`
    - Save, then click **Reveal** under *Signing secret* and copy it (`whsec_...`).
-6. Optional second endpoint for faster payout status updates: **Add endpoint** again with the same
+3. Optional second endpoint for faster payout status updates: **Add endpoint** again with the same
    URL, choose **Events on Connected accounts** and the event `account.updated`. Copy its signing
    secret too. (Without it, payout status still updates whenever the organizer opens the dashboard.)
-7. In Vercel, add `STRIPE_WEBHOOK_SECRET`. With one endpoint, paste its secret. With two, paste both
+4. In Vercel, add `STRIPE_WEBHOOK_SECRET`. With one endpoint, paste its secret. With two, paste both
    separated by a comma, for example `whsec_aaa,whsec_bbb`.
-8. Vercel → **Deployments** → the latest deployment → **⋯** → **Redeploy**, so the new variables
-   take effect.
-9. Repeat Part D on your phone using the Vercel address.
+5. Redeploy (Vercel → **Deployments** → **⋯** → **Redeploy**) and repeat E6 and E7 on the Vercel
+   address.
 
 ---
 
@@ -246,7 +293,9 @@ Do this after everything works locally.
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Connect / Project Settings → Data API | Yes |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Project Settings → API Keys → publishable (or legacy anon) | Yes |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → API Keys → secret (or legacy service_role) | Yes |
-| `STRIPE_SECRET_KEY` | Stripe (test mode) → Developers → API keys → Secret key `sk_test_…` | Yes |
-| `STRIPE_WEBHOOK_SECRET` | `stripe listen` output locally; webhook endpoint secret(s) on Vercel | Yes |
 | `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` locally; your Vercel address in production | Yes |
+| `CRON_SECRET` | A random string you generate (Part B5), at least 16 characters | Yes, for the daily cleanup |
+| `PAYMENTS_ENABLED` | `true` to charge registration fees; empty for free registration | No (default off) |
+| `STRIPE_SECRET_KEY` | Stripe (test mode) → Developers → API keys → Secret key `sk_test_…` | Only with payments |
+| `STRIPE_WEBHOOK_SECRET` | `stripe listen` output locally; webhook endpoint secret(s) on Vercel | Only with payments |
 | `STRIPE_PLATFORM_FEE_PERCENT` | Your choice, 0 to 50 | No |
