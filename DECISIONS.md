@@ -97,6 +97,107 @@ variable is missing.
 
 ---
 
+## Tournament logic
+
+### 9. Bracket state is derived, not mutated
+**Choice.** Each match stores its *structure*: where slot A and slot B come from (`seeded team`,
+`bye`, `winner of match X`, `loser of match X`). `resolveMatches()` recomputes every match's teams,
+status and winner from that structure plus the reported sets, in play order. The database columns
+`team_a_id`, `winner_id`, `status`, etc. are a cache of that output, kept so Realtime subscribers and
+SQL queries can read them directly.
+
+**Why.** There is no "advance the winner" code to get wrong. Byes, bye-vs-bye chains in the losers
+bracket, organizer overrides and the grand final reset all fall out of one pure function. An override
+is just "replace the sets and recompute".
+
+**Tradeoff.** Every write recomputes the whole tournament (microseconds for 64 teams) and diffs it
+against the stored rows. The cache could drift if someone edits rows by hand in the SQL editor; the
+next score report rewrites it.
+
+### 10. Overrides that would rewrite history are refused
+**Choice.** If an override changes a match's winner and a later match that already has scores would
+get a different team, the server refuses and names the affected match. Pool results lock once the
+playoff bracket exists.
+
+**Why.** Silently moving teams out of a half-played match would destroy recorded results. Making the
+organizer clear the later scores first keeps every change deliberate.
+
+**Tradeoff.** Correcting an early mistake late in the day takes several steps.
+
+### 11. One shared format interface
+**Choice.** `TournamentFormat` has four members: `createInitialPlan`, `createFollowUpMatches`,
+`champion` and metadata. Pool play uses `createFollowUpMatches` to seed the playoff bracket when the
+last pool match finishes; double elimination creates everything up front.
+
+**Why.** Adding a format (round robin only, triple elimination) is one module and one registry entry.
+Nothing outside `src/lib/formats/` knows which format is running.
+
+**Tradeoff.** The interface assumes the whole schedule is a set of matches with slot sources. Formats
+that need dynamic pairing (Swiss) would need a richer follow-up hook.
+
+### 12. Byes are real matches
+**Choice.** Brackets are padded to a power of two. Missing seeds become byes for the top seeds and
+each bye is stored as a match with status `bye`.
+
+**Why.** The bracket keeps a fixed, standard shape, so the double-elimination drop pattern works for
+any team count, and the engine treats byes like any other result.
+
+**Tradeoff.** A few extra rows. The UI hides bye matches.
+
+### 13. Double elimination details
+- Losers bracket: round 1 pairs winners-round-1 losers; then each winners round drops its losers
+  in, reversed on alternate rounds to reduce rematches; rounds in between halve the field.
+- Grand final: winners champion in slot A, losers champion in slot B. If the losers champion wins,
+  a "Grand Final (if necessary)" decides it; otherwise that match is marked `not_needed`.
+- Tested by simulating every team count from 3 to 33: champion has at most one loss, every other
+  team exactly two.
+
+### 14. Pool play details
+- Pool count: about `teams / poolSize`, never a pool smaller than 3. Seeds snake across pools
+  (1→A, 2→B, 3→B, 4→A for two pools) so pools are balanced.
+- Round robin by the circle method; odd pools give one team a rest each round.
+- Standings tiebreakers: match wins, set difference, point difference, head-to-head (only for a
+  two-way tie, to stay transitive), then seed. Differences rather than FIVB ratios: easier to read on
+  a phone and no division by zero.
+- Playoff seeds: pool winners first, then runners-up, ordered by record. Then seeds are swapped
+  within the same finishing tier so pool-mates do not meet in the first playoff round.
+- With a single pool at least two teams advance, so there is always a final.
+
+### 15. Seeding = payment order
+**Choice.** Seed 1 is the first team whose payment was confirmed.
+
+**Why.** It is deterministic, needs no extra UI and rewards early registration.
+
+**Tradeoff.** Not skill-based. A "reorder seeds" screen before starting is the natural next step.
+
+### 16. Schedule = waves, not times
+**Choice.** "Schedule generation" assigns every match a play order and a wave (a group of matches
+that can run in parallel): a match's wave is one more than the latest match feeding it, and pool
+matches follow their pool round.
+
+**Why.** Courts and time slots are out of scope, but organizers still need "what's next". Waves give
+an order that never schedules a match before its teams can be known.
+
+---
+
+## Scoring rules
+
+### 17. All point rules live in `src/lib/rules/ruleset.ts`
+**Choice.** Presets: indoor sets to 25, outdoor to 21, deciding set to 15. `bestOf` is 1, 3 or 5
+(chosen per tournament), `winBy` defaults to 2 and there is no cap (an optional cap is supported by
+the module but not exposed in the UI). The UI, demo and validation all ask this module.
+
+**Edge cases decided:**
+- A best-of-1 match is played to the full target (25 or 21), not 15: the "deciding set" rule only
+  applies to multi-set matches.
+- A set score is valid only if the set would have ended exactly there: 27-25 is valid, 27-20 is not
+  (it would have ended at 25-20).
+- Captains report one completed set at a time, append-only. They cannot edit an earlier set; the
+  organizer can override the whole match. This makes "two captains disagree" a conflict that only
+  the organizer resolves.
+
+---
+
 ## Product rules (simplest reasonable option)
 
 | Question | Decision | Why |
