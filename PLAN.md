@@ -1,5 +1,8 @@
 # Build Plan
 
+> **Status:** all six phases are implemented and pushed. Remaining work is manual verification against
+> live Supabase and Stripe test accounts (SETUP_STEPS.md) and the next steps listed in DECISIONS.md.
+
 Short working plan for the Volleyball Tournament Organizer. Each phase ends with a push to `origin/main`.
 Details and tradeoffs live in `DECISIONS.md`; manual steps live in `SETUP_STEPS.md`.
 
