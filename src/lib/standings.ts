@@ -1,4 +1,10 @@
 import type { ResolvedMatch, SeededTeam } from "@/lib/bracket/types";
+import type { SetScore } from "@/lib/rules/ruleset";
+
+/** The fields standings need, so both engine matches and view models can be passed in. */
+export type StandingsMatch = Pick<ResolvedMatch, "status" | "teamAId" | "teamBId" | "setsA" | "setsB" | "winnerId"> & {
+  sets: readonly SetScore[];
+};
 
 export interface StandingRow {
   teamId: string;
@@ -25,7 +31,7 @@ const primaryOrder = (x: Totals, y: Totals) =>
  * 1. matches won, 2. set difference, 3. point difference,
  * 4. head-to-head result (only when exactly two teams are still tied), 5. seed.
  */
-export function computeStandings(teams: readonly SeededTeam[], matches: readonly ResolvedMatch[]): StandingRow[] {
+export function computeStandings(teams: readonly SeededTeam[], matches: readonly StandingsMatch[]): StandingRow[] {
   const totals = new Map<string, Totals>(
     teams.map((t) => [
       t.id,
