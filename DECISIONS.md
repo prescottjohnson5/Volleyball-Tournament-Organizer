@@ -261,6 +261,40 @@ concurrently, the second is renamed "Name (2)" by `confirm_team_payment` rather 
 
 ---
 
+## Live updates and score reporting
+
+### 24. Realtime events trigger a refetch, not a state patch
+**Choice.** The public page, captain page and organizer dashboard subscribe to Supabase Realtime
+Postgres Changes on `matches`, `match_sets`, `teams` and `tournaments` (filtered to one tournament).
+Any event schedules a debounced (250 ms) refetch of the whole tournament view through the anonymous
+client.
+
+**Why.** A score report changes several rows at once (the set, the match, the next match, maybe the
+tournament). Patching local state from individual payloads would duplicate the bracket logic in the
+browser and break on deletes (overrides delete sets). A tournament is small (at most a few hundred
+rows), so a refetch is cheap and always consistent.
+
+**Tradeoff.** More reads than a payload-patching client: every viewer refetches on every change.
+Fine for hundreds of viewers; for thousands I would broadcast one "tournament changed" message per
+commit, or serve the view from a cache.
+
+### 25. Polling as a fallback, refresh on wake
+If the Realtime channel errors or closes (phones going to sleep, flaky Wi-Fi at the beach), the page
+shows "Reconnecting" and polls every 15 seconds. It also refetches whenever the tab becomes visible
+again, which covers the common "unlock phone, look at scores" case.
+
+### 26. Public pages use a session-less client
+Public reads use a Supabase client with no cookies, so an organizer browsing their own public page
+sees exactly what everyone else sees (RLS would otherwise also show them unpaid teams).
+
+### 27. Concurrent captain reports
+Both captains may report the same set. Set numbers must be consecutive and every commit carries the
+tournament version, so the second report is rejected by the version check, retried on fresh data,
+and then refused with "Set 1 was already reported". It never creates a duplicate. An integration
+test runs this exact race against the real SQL function.
+
+---
+
 ## Product rules (simplest reasonable option)
 
 | Question | Decision | Why |
