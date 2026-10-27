@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { TrophyIcon } from "@/components/Icons";
 import { LiveIndicator } from "@/components/tournament/LiveIndicator";
 import { MatchCard } from "@/components/tournament/MatchCard";
 import { useLiveTournament } from "@/components/tournament/useLiveTournament";
@@ -24,16 +24,15 @@ export function OrganizerMatches({ initialView }: { initialView: TournamentView 
 
   return (
     <section className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold">Matches</h2>
-        <div className="flex items-center gap-3">
-          <LiveIndicator status={status} />
-          <Link href={`/t/${view.tournament.slug}`} className="text-sm link">
-            Public page
-          </Link>
-        </div>
-      </div>
-      {champion && <p className="card border-sun/40 bg-sun/15 text-sun text-center font-semibold">🏆 Champion: {champion.name}</p>}
+      <LiveIndicator status={status} />
+      {champion && (
+        <p className="flex items-center gap-3 rounded-2xl border border-sun/40 px-4 py-3 font-bold" role="status">
+          <TrophyIcon className="h-5 w-5 shrink-0 text-sun" />
+          <span>
+            <span className="text-ink-muted">Champion:</span> {champion.name}
+          </span>
+        </p>
+      )}
 
       <div>
         <h3 className="mb-2 text-sm font-semibold text-ink-muted">In progress and up next ({active.length})</h3>

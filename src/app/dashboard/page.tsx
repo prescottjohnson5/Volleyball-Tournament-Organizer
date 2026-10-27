@@ -1,13 +1,12 @@
 import Link from "next/link";
+import { BackLink } from "@/components/BackLink";
 import { SetupNotice } from "@/components/SetupNotice";
+import { TournamentList } from "@/components/tournament/TournamentList";
 import { requireOrganizer } from "@/lib/auth";
 import { listOrganizerTournaments } from "@/lib/data/dashboard";
 import { isPaymentsEnabled } from "@/lib/env";
-import { formatCents } from "@/lib/money";
-import { collectsFees } from "@/lib/payments";
 import { SANDBOX_MAX_TOURNAMENTS } from "@/lib/sandbox";
 import { getPayoutState } from "@/lib/stripe/payout-state";
-import { FORMAT_LABELS, formatEventDate, STATUS_LABELS } from "@/lib/tournaments/labels";
 import { ConnectPanel } from "./ConnectPanel";
 
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ connect?: string }> }) {
@@ -35,9 +34,10 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       ) : (
         <SetupNotice missing={["STRIPE_SECRET_KEY"]} />
       )}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">Your tournaments</h1>
+      <BackLink href="/">Home</BackLink>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-extrabold sm:text-4xl">Your tournaments</h1>
           <p className="text-sm text-ink-muted">
             {organizer.isSandbox ? (
               <>
@@ -52,47 +52,24 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             )}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-4">
+          <form action="/auth/signout" method="post">
+            <button type="submit" className="text-sm font-bold text-ink-subtle hover:text-ink">
+              Sign out
+            </button>
+          </form>
           {!(organizer.isSandbox && tournaments.length >= SANDBOX_MAX_TOURNAMENTS) && (
             <Link href="/dashboard/tournaments/new" className="btn-primary">
               New tournament
             </Link>
           )}
-          <form action="/auth/signout" method="post">
-            <button type="submit" className="btn-secondary">
-              Sign out
-            </button>
-          </form>
         </div>
       </div>
 
       {tournaments.length === 0 ? (
-        <div className="card text-center text-ink-muted">
-          <p>No tournaments yet.</p>
-          <p className="mt-1 text-sm">Create one to get a registration link and QR code.</p>
-        </div>
+        <p className="empty-state">No tournaments yet. Create one to get a registration link and QR code.</p>
       ) : (
-        <ul className="grid gap-3 sm:grid-cols-2">
-          {tournaments.map((t) => (
-            <li key={t.id}>
-              <Link href={`/dashboard/tournaments/${t.id}`} className="card block hover:border-teal">
-                <div className="flex items-start justify-between gap-2">
-                  <h2 className="font-semibold">{t.name}</h2>
-                  <span className="shrink-0 rounded-full bg-teal/20 px-2.5 py-0.5 text-xs font-semibold text-teal-300">
-                    {STATUS_LABELS[t.status]}
-                  </span>
-                </div>
-                <p className="mt-1 text-sm text-ink-muted">
-                  {formatEventDate(t.event_date)} · {t.location}
-                </p>
-                <p className="mt-2 text-sm text-ink-muted">
-                  {FORMAT_LABELS[t.format]} · {t.paidTeams}/{t.max_teams} teams {collectsFees(t) ? "paid" : "registered"}
-                  {collectsFees(t) && <> · {formatCents(t.registration_fee_cents, t.currency)}</>}
-                </p>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <TournamentList items={tournaments} hrefFor={(t) => `/dashboard/tournaments/${t.id}`} />
       )}
     </>
   );

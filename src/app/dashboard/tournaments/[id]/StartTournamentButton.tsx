@@ -36,7 +36,7 @@ export function StartTournamentButton({
   }
 
   return (
-    <div className="card space-y-2 border-teal/60 bg-teal/10">
+    <div className="card space-y-3">
       <h2 className="font-semibold">Start the tournament</h2>
       <p className="text-sm text-ink-muted">
         Starting closes registration, seeds the {paidTeams} {teams} {inOrder} and generates the schedule. This

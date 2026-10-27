@@ -14,9 +14,8 @@ export function SharePanel({ slug, baseUrl }: { slug: string; baseUrl: string })
   }
 
   return (
-    <section className="card grid gap-4 sm:grid-cols-[1fr_auto]">
-      <div className="space-y-3">
-        <h2 className="text-lg font-semibold">Share</h2>
+    <section className="grid gap-6 sm:grid-cols-[1fr_auto]">
+      <div className="space-y-5">
         <div>
           <p className="label">Registration link (for captains)</p>
           <p className="font-mono text-xs break-all text-ink-muted">{registrationUrl}</p>
