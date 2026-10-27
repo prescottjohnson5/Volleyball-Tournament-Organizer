@@ -9,6 +9,7 @@ import { toTournamentInput } from "@/lib/tournaments/schema";
 import { getFormat } from "@/lib/formats";
 import { loadTournamentView } from "@/lib/data/tournament-view";
 import { getPublicBaseUrl } from "@/lib/request-origin";
+import { getPayoutState } from "@/lib/stripe/payout-state";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { TournamentForm } from "../TournamentForm";
 import { DeleteTournamentButton } from "./DeleteTournamentButton";
@@ -24,6 +25,7 @@ export default async function TournamentDashboardPage({ params }: { params: Prom
   const result = await getOrganizerTournament(id, organizer.id);
   if (!result) notFound();
   const { tournament, teams } = result;
+  const payouts = await getPayoutState(organizer.id);
   const paidTeams = teams.filter((t) => t.payment_status === "paid");
   const otherTeams = teams.filter((t) => t.payment_status !== "paid");
 
@@ -47,6 +49,13 @@ export default async function TournamentDashboardPage({ params }: { params: Prom
           {FORMAT_LABELS[tournament.format]} · best of {tournament.best_of} · {formatCents(tournament.registration_fee_cents, tournament.currency)} per team
         </p>
       </section>
+
+      {tournament.status === "registration" && payouts.available && payouts.status !== "ready" && (
+        <p className="card border-amber-300 bg-amber-50 text-sm text-amber-900">
+          Captains cannot pay yet: <Link href="/dashboard" className="font-semibold underline">set up payouts</Link> first so
+          registration fees can go to your Stripe account.
+        </p>
+      )}
 
       {tournament.status !== "registration" && (
         <OrganizerMatches initialView={await loadTournamentView(await createSupabaseServerClient(), tournament)} />
