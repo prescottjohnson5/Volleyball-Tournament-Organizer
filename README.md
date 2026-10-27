@@ -2,7 +2,10 @@
 
 A full-stack web app for organizing volleyball tournaments. Organizers create tournaments, teams register and pay online, pool and bracket schedules are generated automatically, and everyone can follow live scores on their phones.
 
-> **Status: in development.** Items marked with a checked box below are working. The rest are planned.
+> **Status: in development.** Items marked with a checked box below are working end to end. The rest are
+> planned or in progress. Current progress: database schema with Row Level Security, organizer sign-up and
+> tournament create/edit/delete are built and pass automated tests, but have not yet been verified against
+> a live Supabase project.
 
 ## Features
 
@@ -44,19 +47,42 @@ Every match is best of 3 sets. The rules are configurable in one place in the co
 
 ## Getting Started
 
-> Setup instructions will be added once the first version is running.
+Requires Node.js 20 or newer. Commands below are for Windows PowerShell (they also work in bash,
+except `Copy-Item`, which is `cp` there).
 
-```bash
-git clone <repo-url>
-cd <repo-folder>
+```powershell
+git clone https://github.com/prescottjohnson5/Volleyball-Tournament-Organizer.git
+cd Volleyball-Tournament-Organizer
 npm install
-cp .env.example .env.local   # then fill in your own keys
-npm run dev
+npm run check        # lint + type-check + unit tests, no keys needed
+npm run dev          # http://localhost:3000
 ```
+
+The app starts without any keys; pages that need Supabase or Stripe show which variables are missing
+(see http://localhost:3000/setup). To connect real services:
+
+```powershell
+Copy-Item .env.example .env.local
+notepad .env.local   # fill in your own keys
+```
+
+Then follow [SETUP_STEPS.md](SETUP_STEPS.md): it walks through creating the Supabase project, running
+the SQL migrations in `supabase/migrations/` in the SQL Editor, and the Stripe test-mode setup.
+
+### Scripts
+
+| Command | What it does |
+|---|---|
+| `npm run dev` | Start the dev server |
+| `npm run build` / `npm start` | Production build and server |
+| `npm run lint` | ESLint |
+| `npm run typecheck` | TypeScript (strict) |
+| `npm test` | Vitest unit tests, including SQL migration tests in PGlite |
+| `npm run check` | All three checks |
 
 ### Environment variables
 
-The final list lives in `.env.example`. Expect the following:
+The full list with comments lives in [`.env.example`](.env.example):
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=
@@ -64,14 +90,15 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
+STRIPE_PLATFORM_FEE_PERCENT=   # optional
 NEXT_PUBLIC_APP_URL=
 ```
 
-Use Stripe **test mode** keys only. Never commit `.env.local`.
+Use Stripe **test mode** keys only (the app refuses live keys). Never commit `.env.local`.
 
 ## Design Decisions
 
-Design choices and their tradeoffs will be documented in `DECISIONS.md`.
+Design choices and their tradeoffs are documented in [DECISIONS.md](DECISIONS.md).
 
 ## Roadmap
 
