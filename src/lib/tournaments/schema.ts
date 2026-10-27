@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { poolOptionsSchema } from "@/lib/formats/pool-play";
 import type { Json, TournamentRow } from "@/lib/supabase/database.types";
 
 const isoDate = z
@@ -8,11 +9,6 @@ const isoDate = z
     const date = new Date(`${value}T00:00:00Z`);
     return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(value);
   }, "Not a real calendar date");
-
-export const poolOptionsSchema = z.object({
-  poolSize: z.number().int().min(3).max(6).default(4),
-  advancePerPool: z.number().int().min(1).max(4).default(2),
-});
 
 /** What the organizer submits when creating or editing a tournament. */
 export const tournamentInputSchema = z.object({
