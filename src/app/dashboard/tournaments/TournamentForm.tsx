@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { parseDollarsToCents } from "@/lib/money";
+import { ENVIRONMENT_PRESETS } from "@/lib/rules/ruleset";
 import type { TournamentInput } from "@/lib/tournaments/schema";
 import { FORMAT_LABELS } from "@/lib/tournaments/labels";
 
@@ -101,7 +102,7 @@ export function TournamentForm({ mode, initial, tournamentId }: Props) {
                 onChange={() => setEnvironment(value)}
                 className="sr-only"
               />
-              {value} {value === "indoor" ? "(sets to 25)" : "(sets to 21)"}
+              {value} (sets to {ENVIRONMENT_PRESETS[value].pointsPerSet})
             </label>
           ))}
         </div>
