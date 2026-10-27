@@ -1,15 +1,37 @@
 import Link from "next/link";
+import { SetupNotice } from "@/components/SetupNotice";
 import { requireOrganizer } from "@/lib/auth";
 import { listOrganizerTournaments } from "@/lib/data/dashboard";
 import { formatCents } from "@/lib/money";
+import { getPayoutState } from "@/lib/stripe/payout-state";
 import { FORMAT_LABELS, formatEventDate, STATUS_LABELS } from "@/lib/tournaments/labels";
+import { ConnectPanel } from "./ConnectPanel";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ connect?: string }> }) {
   const organizer = await requireOrganizer();
-  const tournaments = await listOrganizerTournaments(organizer.id);
+  const [tournaments, payouts, { connect }] = await Promise.all([
+    listOrganizerTournaments(organizer.id),
+    getPayoutState(organizer.id),
+    searchParams,
+  ]);
 
   return (
     <>
+      {payouts.available ? (
+        <ConnectPanel
+          status={payouts.status}
+          feePercent={payouts.feePercent}
+          notice={
+            connect === "error"
+              ? "Stripe could not create a new setup link. Try again."
+              : connect === "return" && payouts.status !== "ready"
+                ? "Stripe has not finished verifying your details yet. If you skipped a step, continue setup."
+                : undefined
+          }
+        />
+      ) : (
+        <SetupNotice missing={["STRIPE_SECRET_KEY"]} />
+      )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Your tournaments</h1>
