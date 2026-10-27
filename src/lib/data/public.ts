@@ -2,7 +2,8 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, TournamentRow } from "@/lib/supabase/database.types";
 import { createSupabasePublicClient } from "@/lib/supabase/public";
-import { viewFromRows, type TournamentView } from "@/lib/view";
+import type { TournamentView } from "@/lib/view";
+import { loadTournamentView } from "./tournament-view";
 
 type Db = SupabaseClient<Database>;
 
@@ -27,16 +28,4 @@ export async function getTournamentView(slug: string, db: Db = createSupabasePub
   const tournament = await getPublicTournament(slug, db);
   if (!tournament) return null;
   return loadTournamentView(db, tournament);
-}
-
-export async function loadTournamentView(db: Db, tournament: TournamentRow): Promise<TournamentView> {
-  const [teams, matches, sets] = await Promise.all([
-    db.from("teams").select("*").eq("tournament_id", tournament.id).eq("payment_status", "paid").order("seed").order("paid_at"),
-    db.from("matches").select("*").eq("tournament_id", tournament.id).order("order_index"),
-    db.from("match_sets").select("*").eq("tournament_id", tournament.id),
-  ]);
-  if (teams.error) throw teams.error;
-  if (matches.error) throw matches.error;
-  if (sets.error) throw sets.error;
-  return viewFromRows(tournament, teams.data, matches.data, sets.data);
 }
