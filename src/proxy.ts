@@ -8,9 +8,11 @@ import type { Database } from "@/lib/supabase/database.types";
  * /dashboard. Public pages (tournament view, registration, captain links) do not run this.
  */
 export async function proxy(request: NextRequest) {
-  // Without Supabase keys the dashboard renders a setup notice instead.
-  if (missingEnv(["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY"]).length > 0) {
-    return NextResponse.next({ request });
+  // Without Supabase keys, show the setup page instead of the dashboard.
+  if (missingEnv(["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY"]).length > 0) {
+    return request.nextUrl.pathname.startsWith("/dashboard")
+      ? NextResponse.rewrite(new URL("/setup", request.url))
+      : NextResponse.next({ request });
   }
 
   let response = NextResponse.next({ request });
