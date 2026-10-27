@@ -295,6 +295,43 @@ test runs this exact race against the real SQL function.
 
 ---
 
+## Stripe Connect
+
+### 28. Express accounts with destination charges
+**Choice.** Each organizer onboards a Stripe **Express** account. Checkout runs on the platform
+account with `payment_intent_data.transfer_data.destination = <organizer account>` and an optional
+`application_fee_amount` (`STRIPE_PLATFORM_FEE_PERCENT`, rounded down).
+
+**Why.** Express gives organizers a Stripe-hosted onboarding and payout dashboard with almost no
+platform code. Destination charges keep the Checkout Session, webhooks and refunds on the platform
+account, so the Phase 3 webhook works unchanged and one signing secret covers payments.
+
+**Alternatives.** *Direct charges* (Checkout on the organizer's account) make the organizer the
+merchant of record but scatter webhooks across accounts. *Separate charges and transfers* allow
+splitting one payment between several accounts, which this app does not need.
+
+**Tradeoff.** The platform is the merchant of record and bears refunds and disputes first. Refunds
+use `reverse_transfer` and `refund_application_fee` so the organizer's share and the fee are pulled
+back together.
+
+### 29. Registration waits for a ready connected account
+**Choice.** The checkout route refuses (409) unless the organizer's account has `charges_enabled`, and
+the registration page says registration opens soon instead of showing the form.
+
+**Why.** Charging on the platform and paying organizers later would mean holding their money and
+building manual transfers.
+
+**Tradeoff.** Organizers must finish Stripe onboarding before sharing the link (the dashboard says
+so clearly).
+
+### 30. Account status: pull on return, push by webhook
+The dashboard re-checks an incomplete account with `accounts.retrieve` on every visit (which covers
+returning from onboarding), and the webhook handles `account.updated` when Connect events are
+forwarded. Either alone is enough, so a missing Connect webhook in production degrades nothing.
+Account creation uses an idempotency key per organizer so a double click cannot create two accounts.
+
+---
+
 ## Product rules (simplest reasonable option)
 
 | Question | Decision | Why |
