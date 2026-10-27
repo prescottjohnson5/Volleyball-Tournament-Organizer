@@ -14,6 +14,7 @@ export const ENV_READERS = {
   STRIPE_WEBHOOK_SECRET: () => process.env.STRIPE_WEBHOOK_SECRET,
   NEXT_PUBLIC_APP_URL: () => process.env.NEXT_PUBLIC_APP_URL,
   STRIPE_PLATFORM_FEE_PERCENT: () => process.env.STRIPE_PLATFORM_FEE_PERCENT,
+  PAYMENTS_ENABLED: () => process.env.PAYMENTS_ENABLED,
 } as const;
 
 export type EnvName = keyof typeof ENV_READERS;
@@ -95,4 +96,12 @@ export function getPlatformFeePercent(): number {
     throw new Error("STRIPE_PLATFORM_FEE_PERCENT must be a number between 0 and 50.");
   }
   return value;
+}
+
+/**
+ * Payments are off unless PAYMENTS_ENABLED is exactly "true". When off, the app needs no Stripe
+ * keys and never calls Stripe: registration is free and confirmed immediately.
+ */
+export function isPaymentsEnabled(): boolean {
+  return read("PAYMENTS_ENABLED")?.toLowerCase() === "true";
 }

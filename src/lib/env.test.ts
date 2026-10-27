@@ -5,6 +5,7 @@ import {
   getStripeSecretKey,
   getStripeWebhookSecrets,
   getSupabasePublicEnv,
+  isPaymentsEnabled,
   MissingEnvError,
   missingEnv,
 } from "./env";
@@ -58,5 +59,16 @@ describe("env", () => {
     expect(getPlatformFeePercent()).toBe(2.5);
     vi.stubEnv("STRIPE_PLATFORM_FEE_PERCENT", "abc");
     expect(() => getPlatformFeePercent()).toThrow();
+  });
+
+  it("keeps payments off unless PAYMENTS_ENABLED is true", () => {
+    vi.stubEnv("PAYMENTS_ENABLED", "");
+    expect(isPaymentsEnabled()).toBe(false);
+    vi.stubEnv("PAYMENTS_ENABLED", "yes");
+    expect(isPaymentsEnabled()).toBe(false);
+    vi.stubEnv("PAYMENTS_ENABLED", "false");
+    expect(isPaymentsEnabled()).toBe(false);
+    vi.stubEnv("PAYMENTS_ENABLED", " TRUE ");
+    expect(isPaymentsEnabled()).toBe(true);
   });
 });
