@@ -6,9 +6,12 @@ import { getOrganizerTournament } from "@/lib/data/dashboard";
 import { formatCents } from "@/lib/money";
 import { FORMAT_LABELS, formatEventDate, PAYMENT_LABELS, STATUS_LABELS } from "@/lib/tournaments/labels";
 import { toTournamentInput } from "@/lib/tournaments/schema";
-import { TournamentForm } from "../TournamentForm";
 import { getFormat } from "@/lib/formats";
+import { getPublicBaseUrl } from "@/lib/request-origin";
+import { TournamentForm } from "../TournamentForm";
 import { DeleteTournamentButton } from "./DeleteTournamentButton";
+import { RegenerateCaptainLink } from "./RegenerateCaptainLink";
+import { SharePanel } from "./SharePanel";
 import { StartTournamentButton } from "./StartTournamentButton";
 
 export default async function TournamentDashboardPage({ params }: { params: Promise<{ id: string }> }) {
@@ -42,6 +45,8 @@ export default async function TournamentDashboardPage({ params }: { params: Prom
         </p>
       </section>
 
+      <SharePanel slug={tournament.slug} baseUrl={await getPublicBaseUrl()} />
+
       <section className="card space-y-3">
         <h2 className="text-lg font-semibold">
           Teams <span className="text-slate-500">({paidTeams.length}/{tournament.max_teams} paid)</span>
@@ -52,12 +57,17 @@ export default async function TournamentDashboardPage({ params }: { params: Prom
           <ul className="divide-y divide-slate-100">
             {paidTeams.map((team) => (
               <li key={team.id} className="py-2">
-                <p className="font-medium">{team.name}</p>
+                <p className="font-medium">
+                  {team.seed !== null && <span className="mr-1 text-slate-400">#{team.seed}</span>}
+                  {team.name}
+                  {team.pool && <span className="ml-2 text-xs text-slate-500">Pool {team.pool}</span>}
+                </p>
                 {team.captain && (
                   <p className="text-sm text-slate-600">
                     {team.captain.captain_name} · {team.captain.captain_email}
                   </p>
                 )}
+                <RegenerateCaptainLink tournamentId={tournament.id} teamId={team.id} teamName={team.name} />
               </li>
             ))}
           </ul>
