@@ -6,6 +6,8 @@ import { countPublicPaidTeams, getPublicTournament } from "@/lib/data/public";
 import { missingEnv } from "@/lib/env";
 import { formatCents } from "@/lib/money";
 import { createRuleset, describeRuleset, type BestOf } from "@/lib/rules/ruleset";
+import { getPayoutAccount } from "@/lib/stripe/connect";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { FORMAT_LABELS, formatEventDate } from "@/lib/tournaments/labels";
 import { RegisterForm } from "./RegisterForm";
 
@@ -31,6 +33,10 @@ export default async function RegisterPage({
   const fee = formatCents(tournament.registration_fee_cents, tournament.currency);
   const rules = createRuleset(tournament.environment, { bestOf: tournament.best_of as BestOf });
   const open = tournament.status === "registration" && spotsLeft > 0;
+  // Payments go to the organizer's Stripe account, so registration waits until it is ready.
+  const paymentsReady =
+    missingEnv(["SUPABASE_SERVICE_ROLE_KEY"]).length > 0 ||
+    (await getPayoutAccount(createSupabaseAdminClient(), tournament.organizer_id)) !== null;
 
   return (
     <div className="mx-auto max-w-lg space-y-5">
@@ -62,7 +68,9 @@ export default async function RegisterPage({
         </p>
       )}
 
-      {open ? (
+      {open && !paymentsReady ? (
+        <p className="card text-slate-700">Registration opens as soon as the organizer finishes setting up payments. Check back soon.</p>
+      ) : open ? (
         <RegisterForm slug={tournament.slug} feeLabel={fee} />
       ) : (
         <p className="card text-slate-700">
