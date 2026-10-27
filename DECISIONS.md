@@ -198,6 +198,69 @@ the module but not exposed in the UI). The UI, demo and validation all ask this 
 
 ---
 
+## Registration and payments
+
+### 18. A team row exists before payment, but only the webhook makes it count
+**Choice.** Submitting the registration form inserts a `pending` team (plus private captain details)
+and creates a Checkout Session for it. Only the `checkout.session.completed` webhook marks it `paid`.
+Abandoned checkouts become `expired` when Stripe sends `checkout.session.expired` (sessions last 30
+minutes, Stripe's minimum).
+
+**Why.** The webhook is the only trustworthy signal: the success redirect can be faked, skipped
+(closed tab) or arrive before the payment settles. Creating the row first gives the webhook something
+to update and the organizer visibility into abandoned checkouts.
+
+**Tradeoff.** Pending rows accumulate; they are harmless (RLS hides them from the public) and could be
+cleaned up by a scheduled job.
+
+### 19. Capacity is checked twice, and enforced under a lock
+**Choice.** The checkout route refuses when the tournament is full, but two captains can still pay
+for the last spot at the same time. `confirm_team_payment` locks the tournament row, counts paid
+teams, and returns `needs_refund` if it is full or already started; the webhook then refunds
+automatically.
+
+**Why.** Overbooking is worse than a refund, and a lock inside one SQL function is the simplest way to
+make "check and confirm" atomic.
+
+**Tradeoff.** A captain can occasionally pay and be refunded. Reserving spots during checkout would
+avoid that but needs expiry handling for abandoned reservations.
+
+### 20. Webhook idempotency in three layers
+1. **Signature** verified on the raw body with `stripe.webhooks.constructEvent`.
+2. **Event log:** `stripe_events` records each processed event id; a replay returns early. The event
+   is recorded only *after* its side effects succeed, so a crash mid-way leads to a Stripe retry,
+   not a lost payment.
+3. **Idempotent side effects,** because a retry can still race the first attempt: confirmation is a
+   conditional update (`already_paid` on replay), refunds use a Stripe idempotency key and treat
+   `charge_already_refunded` as success, expiry only touches `pending` rows.
+
+**Tradeoff.** More moving parts than "insert the event id first", but that simpler version loses
+events when processing fails after the insert.
+
+### 21. The captain link is revealed once, using the Checkout Session id as a claim ticket
+**Choice.** After payment, the success page polls `/api/register/claim` with the `session_id` Stripe
+appended to the redirect. Once the webhook has confirmed payment, the server generates a random
+256-bit token, stores **only its SHA-256 hash** (with a conditional `captain_token_hash is null`
+update, so only the first claim wins) and returns the token. The browser keeps it in `localStorage`
+so a refresh still shows it. Organizers can issue a new link at any time, which invalidates the old
+one.
+
+**Why.** The token never passes through Stripe or email (both out of scope), and a database leak does
+not expose working links. SHA-256 is enough because the token is random, not a guessable password.
+
+**Tradeoff.** If the captain loses the link they must ask the organizer. The session id is a bearer
+secret for a single claim; it is long and random and only reaches the paying browser.
+
+### 22. Captain tokens live in the URL path
+`/captain/<token>` is easy to bookmark and share with a co-captain. The route sends
+`Referrer-Policy: no-referrer` so the token never leaks to other sites through the Referer header.
+
+### 23. Same team name, paid at the same time
+The checkout route refuses a name that is already paid, but if two teams with the same name pay
+concurrently, the second is renamed "Name (2)" by `confirm_team_payment` rather than refunded.
+
+---
+
 ## Product rules (simplest reasonable option)
 
 | Question | Decision | Why |
