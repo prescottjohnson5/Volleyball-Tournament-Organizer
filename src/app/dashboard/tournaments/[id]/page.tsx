@@ -7,7 +7,9 @@ import { formatCents } from "@/lib/money";
 import { FORMAT_LABELS, formatEventDate, PAYMENT_LABELS, STATUS_LABELS } from "@/lib/tournaments/labels";
 import { toTournamentInput } from "@/lib/tournaments/schema";
 import { TournamentForm } from "../TournamentForm";
+import { getFormat } from "@/lib/formats";
 import { DeleteTournamentButton } from "./DeleteTournamentButton";
+import { StartTournamentButton } from "./StartTournamentButton";
 
 export default async function TournamentDashboardPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -73,6 +75,10 @@ export default async function TournamentDashboardPage({ params }: { params: Prom
           </details>
         )}
       </section>
+
+      {tournament.status === "registration" && (
+        <StartTournamentButton tournamentId={tournament.id} paidTeams={paidTeams.length} minTeams={getFormat(tournament.format).minTeams} />
+      )}
 
       {tournament.status === "registration" && (
         <section className="space-y-3">
