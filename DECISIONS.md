@@ -342,3 +342,24 @@ Account creation uses an idempotency key per organizer so a double click cannot 
 | Deleting a tournament | Refused once any team has paid. | Deleting would orphan real (test) payments. Cancelling with refunds is out of scope. |
 | Public URL | `/t/<name>-<6 random chars>` | Readable, shareable, not guessable by counting. |
 | Organizer session check | `supabase.auth.getClaims()` on the server | It verifies the JWT; `getSession()` only reads the cookie. |
+
+---
+
+## Known limitations and next steps
+
+Honest gaps, roughly in the order I would tackle them:
+
+1. **Verify against live services.** Everything is covered by automated tests, but the full flow has not
+   been run against a real Supabase project and Stripe test account yet (see SETUP_STEPS.md).
+2. **Rate limiting** on public routes (`/api/register/*`, `/api/captain/*`). Captain tokens are
+   unguessable, but a rate limit (for example Vercel KV or Upstash) would stop abusive registration
+   attempts.
+3. **Seeding control.** Seeds follow payment order. A drag-to-reorder screen before starting the
+   tournament would let organizers seed by skill.
+4. **Generated database types.** Switch `database.types.ts` to `supabase gen types` output in CI once
+   the CLI is acceptable as a dev dependency.
+5. **Cleanup job** for old `pending` and `expired` registrations.
+6. **Cancel a tournament with refunds.** Deletion is refused once teams have paid; a "cancel and
+   refund everyone" action would close that gap.
+7. **Browser tests.** Unit and SQL tests cover the logic; a Playwright smoke test against a seeded
+   Supabase project would cover the pages and Realtime end to end.
