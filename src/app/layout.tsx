@@ -48,34 +48,26 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#07063a",
+  themeColor: "#000000",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body className="flex min-h-dvh flex-col">
-        <header className="bg-midnight-950">
-          <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3">
+        <header>
+          <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-4">
             <Link href="/" className="flex items-center gap-2.5 text-lg font-extrabold tracking-tight">
               <LogoMark />
               <span>Tournament Organizer</span>
             </Link>
-            <nav className="flex items-center gap-5 text-sm font-bold">
-              <Link href="/demo" className="hidden text-ink-muted hover:text-ink sm:inline">
-                Demo
-              </Link>
-              <Link href="/signup" className="hidden text-ink-muted hover:text-ink sm:inline">
-                Sign up
-              </Link>
-              {/* /dashboard sends visitors who are not signed in to /login and brings them back afterwards. */}
-              <Link href="/dashboard" className="btn-primary min-h-10">
-                Log in
-              </Link>
-            </nav>
+            {/* /dashboard sends visitors who are not signed in to /login and brings them back afterwards. */}
+            <Link href="/dashboard" className="text-sm font-bold text-ink-muted hover:text-ink">
+              Log in
+            </Link>
           </div>
         </header>
-        <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">{children}</main>
+        <main className="mx-auto w-full max-w-5xl flex-1 px-4 pt-4 pb-16">{children}</main>
       </body>
     </html>
   );

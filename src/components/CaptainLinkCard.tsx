@@ -17,7 +17,7 @@ export function CaptainLinkCard({ token, teamName }: { token: string; teamName: 
           link can report scores for your team, and it is shown only on this device.
         </p>
       </div>
-      <p className="rounded-lg bg-midnight-950 p-3 font-mono text-xs break-all">{link}</p>
+      <p className="rounded-lg bg-surface-raised p-3 font-mono text-xs break-all">{link}</p>
       <div className="flex flex-wrap gap-2">
         <button
           type="button"

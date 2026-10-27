@@ -25,7 +25,7 @@ export function RegenerateCaptainLink({ tournamentId, teamId, teamName }: { tour
 
   if (link) {
     return (
-      <div className="mt-2 space-y-1 rounded-lg bg-midnight-950 p-2">
+      <div className="mt-2 space-y-1 rounded-lg bg-surface-raised p-2">
         <p className="text-xs text-ink-muted">New captain link for {teamName} (shown once; the old link no longer works):</p>
         <p className="font-mono text-xs break-all">{link}</p>
         <button type="button" className="btn-secondary min-h-9 py-1" onClick={() => navigator.clipboard.writeText(link)}>
