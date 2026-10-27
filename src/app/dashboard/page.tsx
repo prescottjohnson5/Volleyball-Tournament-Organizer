@@ -5,6 +5,7 @@ import { listOrganizerTournaments } from "@/lib/data/dashboard";
 import { isPaymentsEnabled } from "@/lib/env";
 import { formatCents } from "@/lib/money";
 import { collectsFees } from "@/lib/payments";
+import { SANDBOX_MAX_TOURNAMENTS } from "@/lib/sandbox";
 import { getPayoutState } from "@/lib/stripe/payout-state";
 import { FORMAT_LABELS, formatEventDate, STATUS_LABELS } from "@/lib/tournaments/labels";
 import { ConnectPanel } from "./ConnectPanel";
@@ -13,7 +14,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const organizer = await requireOrganizer();
   const [tournaments, payouts, { connect }] = await Promise.all([
     listOrganizerTournaments(organizer.id),
-    isPaymentsEnabled() ? getPayoutState(organizer.id) : null,
+    isPaymentsEnabled() && !organizer.isSandbox ? getPayoutState(organizer.id) : null,
     searchParams,
   ]);
 
@@ -37,12 +38,26 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Your tournaments</h1>
-          <p className="text-sm text-slate-600">Signed in as {organizer.email ?? "organizer"}</p>
+          <p className="text-sm text-slate-600">
+            {organizer.isSandbox ? (
+              <>
+                Sandbox organizer.{" "}
+                <Link href="/signup" className="text-brand-700 underline">
+                  Create a free account
+                </Link>{" "}
+                to keep your tournaments (sandbox data is not moved over).
+              </>
+            ) : (
+              <>Signed in as {organizer.email ?? "organizer"}</>
+            )}
+          </p>
         </div>
         <div className="flex gap-2">
-          <Link href="/dashboard/tournaments/new" className="btn-primary">
-            New tournament
-          </Link>
+          {!(organizer.isSandbox && tournaments.length >= SANDBOX_MAX_TOURNAMENTS) && (
+            <Link href="/dashboard/tournaments/new" className="btn-primary">
+              New tournament
+            </Link>
+          )}
           <form action="/auth/signout" method="post">
             <button type="submit" className="btn-secondary">
               Sign out

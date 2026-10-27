@@ -59,3 +59,12 @@ describe("parseTournamentInput", () => {
     expect(parseTournamentInput({ ...valid, registrationFeeCents: undefined }, { withFee: false }).name).toBe("Summer Slam");
   });
 });
+
+describe("parseTournamentInput for sandbox organizers", () => {
+  it("caps teams at 8 and never keeps a fee", () => {
+    expect(() => parseTournamentInput(valid, { withFee: false, sandbox: true })).toThrow(/at most 8 teams/);
+    const input = parseTournamentInput({ ...valid, maxTeams: 8 }, { withFee: true, sandbox: true });
+    expect(input.maxTeams).toBe(8);
+    expect(input.registrationFeeCents).toBeUndefined();
+  });
+});

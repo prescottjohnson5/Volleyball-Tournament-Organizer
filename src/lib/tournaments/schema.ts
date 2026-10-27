@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { UserFacingError } from "@/lib/errors";
+import { SANDBOX_MAX_TEAMS } from "@/lib/sandbox";
 import { poolOptionsSchema } from "@/lib/formats/pool-play";
 import type { Json, TournamentRow } from "@/lib/supabase/database.types";
 
@@ -32,12 +33,16 @@ export const tournamentInputSchema = z.object({
 export type TournamentInput = z.infer<typeof tournamentInputSchema>;
 
 /**
- * Validates organizer input. The fee is only kept when fees are collected (payments on); otherwise
- * it is dropped, so a new tournament is free and an edit leaves the stored fee alone.
+ * Validates organizer input. The fee is only kept when fees are collected (payments on, and not a
+ * sandbox organizer); otherwise it is dropped, so a new tournament is free and an edit leaves the
+ * stored fee alone. Sandbox organizers are also limited to SANDBOX_MAX_TEAMS teams.
  */
-export function parseTournamentInput(raw: unknown, { withFee }: { withFee: boolean }): TournamentInput {
+export function parseTournamentInput(raw: unknown, { withFee, sandbox = false }: { withFee: boolean; sandbox?: boolean }): TournamentInput {
   const input = tournamentInputSchema.parse(raw);
-  if (!withFee) return { ...input, registrationFeeCents: undefined };
+  if (sandbox && input.maxTeams > SANDBOX_MAX_TEAMS) {
+    throw new UserFacingError(`Sandbox tournaments can have at most ${SANDBOX_MAX_TEAMS} teams. Create a free account for bigger tournaments.`);
+  }
+  if (!withFee || sandbox) return { ...input, registrationFeeCents: undefined };
   if (input.registrationFeeCents === undefined) throw new UserFacingError("Enter a registration fee.", 400);
   return input;
 }

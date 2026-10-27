@@ -6,6 +6,7 @@ import { getOrganizerTournament } from "@/lib/data/dashboard";
 import { isPaymentsEnabled } from "@/lib/env";
 import { formatCents } from "@/lib/money";
 import { collectsFees } from "@/lib/payments";
+import { SANDBOX_MAX_TEAMS } from "@/lib/sandbox";
 import { FORMAT_LABELS, formatEventDate, PAYMENT_LABELS, STATUS_LABELS } from "@/lib/tournaments/labels";
 import { toTournamentInput } from "@/lib/tournaments/schema";
 import { getFormat } from "@/lib/formats";
@@ -114,7 +115,13 @@ export default async function TournamentDashboardPage({ params }: { params: Prom
       {tournament.status === "registration" && (
         <section className="space-y-3">
           <h2 className="text-lg font-semibold">Edit details</h2>
-          <TournamentForm mode="edit" showFee={isPaymentsEnabled()} tournamentId={tournament.id} initial={toTournamentInput(tournament)} />
+          <TournamentForm
+            mode="edit"
+            showFee={isPaymentsEnabled() && !organizer.isSandbox}
+            maxTeamsLimit={organizer.isSandbox ? SANDBOX_MAX_TEAMS : undefined}
+            tournamentId={tournament.id}
+            initial={toTournamentInput(tournament)}
+          />
           <DeleteTournamentButton tournamentId={tournament.id} />
         </section>
       )}

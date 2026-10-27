@@ -8,12 +8,13 @@ import type { TournamentInput } from "@/lib/tournaments/schema";
 import { FORMAT_LABELS } from "@/lib/tournaments/labels";
 
 // showFee is false when payments are off: the fee field is hidden and no fee is sent.
-type Props = { showFee: boolean } & (
+// maxTeamsLimit is lower for sandbox organizers.
+type Props = { showFee: boolean; maxTeamsLimit?: number } & (
   | { mode: "create"; initial?: undefined; tournamentId?: undefined }
   | { mode: "edit"; initial: TournamentInput; tournamentId: string }
 );
 
-export function TournamentForm({ mode, initial, tournamentId, showFee }: Props) {
+export function TournamentForm({ mode, initial, tournamentId, showFee, maxTeamsLimit = 64 }: Props) {
   const router = useRouter();
   const [name, setName] = useState(initial?.name ?? "");
   const [eventDate, setEventDate] = useState(initial?.eventDate ?? "");
@@ -169,7 +170,7 @@ export function TournamentForm({ mode, initial, tournamentId, showFee }: Props) 
           <label htmlFor="maxTeams" className="label">
             Max teams
           </label>
-          <input id="maxTeams" type="number" inputMode="numeric" min={3} max={64} required className="input" value={maxTeams} onChange={(e) => setMaxTeams(e.target.value)} />
+          <input id="maxTeams" type="number" inputMode="numeric" min={3} max={maxTeamsLimit} required className="input" value={maxTeams} onChange={(e) => setMaxTeams(e.target.value)} />
         </div>
         {showFee && (
           <div>

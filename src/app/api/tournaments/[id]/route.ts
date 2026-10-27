@@ -10,7 +10,7 @@ type Context = { params: Promise<{ id: string }> };
 export const PATCH = route(async (request: Request, { params }: Context) => {
   const organizer = await requireOrganizerForApi();
   const id = parseId((await params).id, "tournament");
-  const input = parseTournamentInput(await readJson(request), { withFee: isPaymentsEnabled() });
+  const input = parseTournamentInput(await readJson(request), { withFee: isPaymentsEnabled(), sandbox: organizer.isSandbox });
   const db = createSupabaseAdminClient();
 
   const tournament = await getOwnedTournament(db, id, organizer.id);
