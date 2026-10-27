@@ -147,3 +147,20 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+# --- Volleyball Tournament Organizer additions ---
+# Next.js generated types and Vercel project link
+next-env.d.ts
+.vercel
+
+# Never commit local secrets (.env.example is allowed above)
+.env*.local
+*.pem
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Supabase CLI scratch (the CLI is optional for this project)
+supabase/.temp/
+supabase/.branches/
