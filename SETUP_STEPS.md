@@ -1,0 +1,100 @@
+# Setup Steps (things you do by hand)
+
+Everything here is a one-time manual step that the code cannot do for you. Follow the sections in
+order. All commands are for **Windows PowerShell**, run from the project folder
+(`Volleyball-Tournament-Organizer`). You do **not** need the Supabase CLI.
+
+> **Never paste keys into chat, commit them, or share screenshots of them.** They only go in
+> `.env.local`, which Git ignores.
+
+---
+
+## Part A — Run the app locally without any keys
+
+1. Install dependencies:
+   ```powershell
+   npm install
+   ```
+2. Run the checks (lint, type-check, unit tests). They need no keys:
+   ```powershell
+   npm run check
+   ```
+3. Start the dev server and open http://localhost:3000:
+   ```powershell
+   npm run dev
+   ```
+   Pages that need keys show a yellow **Setup needed** box listing the missing variable names.
+   Open http://localhost:3000/setup at any time to see which variables are still missing.
+
+---
+
+## Part B — Supabase (database, organizer accounts, live updates)
+
+### B1. Create the project
+1. Go to https://supabase.com and sign in (the free plan is fine).
+2. Click **New project**. Pick any name (for example `volleyball`), set a database password
+   (save it in your password manager) and choose the region closest to you.
+3. Wait until the project dashboard finishes setting up (about 2 minutes).
+
+### B2. Create the tables (run the SQL migrations)
+Run the four files in `supabase/migrations/` **in order**: `0001`, `0002`, `0003`, `0004`.
+
+For each file:
+1. In VS Code, open the file (for example `supabase/migrations/0001_schema.sql`), press
+   `Ctrl+A` then `Ctrl+C` to copy everything.
+2. In Supabase, click **SQL Editor** in the left sidebar, then **New query** (the `+` button).
+3. Paste with `Ctrl+V` and click **Run** (or press `Ctrl+Enter`).
+4. You should see **Success. No rows returned**. If you see an error, stop and check that you ran
+   the previous files first.
+
+What each file does:
+| File | Purpose |
+|---|---|
+| `0001_schema.sql` | Creates the tables |
+| `0002_rls.sql` | Turns on Row Level Security: anyone can read public data, nobody can write from the browser |
+| `0003_functions.sql` | Adds the two database functions the server uses for safe multi-row writes |
+| `0004_realtime.sql` | Turns on Realtime for `tournaments`, `teams`, `matches` and `match_sets` (safe to re-run) |
+
+### B3. Check that Realtime is on
+1. In Supabase, open **Database** → **Publications**.
+2. Click **supabase_realtime**. The tables `tournaments`, `teams`, `matches` and `match_sets`
+   should be switched on. If not, run `0004_realtime.sql` again.
+
+### B4. Copy the Supabase keys into `.env.local`
+1. Create your local env file from the template:
+   ```powershell
+   Copy-Item .env.example .env.local
+   notepad .env.local
+   ```
+2. In Supabase, click the **Connect** button at the top of the project (or open
+   **Project Settings** → **Data API**) and copy the **Project URL** into
+   `NEXT_PUBLIC_SUPABASE_URL`.
+3. Open **Project Settings** → **API Keys**:
+   - Copy the **publishable** key (starts with `sb_publishable_`) into
+     `NEXT_PUBLIC_SUPABASE_ANON_KEY`. (On older projects, the legacy **anon** key works too.)
+   - Copy the **secret** key (starts with `sb_secret_`) into `SUPABASE_SERVICE_ROLE_KEY`.
+     (On older projects, the legacy **service_role** key works too.) This key bypasses all
+     security rules: it is only ever read on the server and must never be shared.
+4. Set `NEXT_PUBLIC_APP_URL=http://localhost:3000`.
+5. Save the file, then stop (`Ctrl+C`) and restart `npm run dev`. Environment variables are only
+   read when the dev server starts.
+
+### B5. Configure organizer sign-up
+1. In Supabase, open **Authentication** → **URL Configuration**.
+2. Set **Site URL** to `http://localhost:3000`.
+3. Under **Redirect URLs**, click **Add URL** and add `http://localhost:3000/auth/callback`.
+4. Optional, for faster local testing: open **Authentication** → **Sign In / Providers** →
+   **Email** and turn off **Confirm email**. New organizers can then sign in straight away.
+   If you leave it on, Supabase emails a confirmation link (its built-in email service only
+   sends a few emails per hour).
+
+### B6. Try it
+1. Open http://localhost:3000/signup and create an organizer account.
+2. You land on the dashboard. Click **New tournament** and create one.
+3. In Supabase, open **Table Editor** → `tournaments` to see the row.
+
+---
+
+## Part C — Stripe (registration payments)
+
+_Added when payments are built (Phase 3)._
