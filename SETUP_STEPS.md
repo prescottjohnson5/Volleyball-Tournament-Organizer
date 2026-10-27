@@ -82,7 +82,9 @@ What each file does:
 ### B5. Configure organizer sign-up
 1. In Supabase, open **Authentication** → **URL Configuration**.
 2. Set **Site URL** to `http://localhost:3000`.
-3. Under **Redirect URLs**, click **Add URL** and add `http://localhost:3000/auth/callback`.
+3. Under **Redirect URLs**, click **Add URL** and add `http://localhost:3000/**` (the `**` wildcard
+   lets the confirmation link carry the page to return to, for example
+   `/auth/callback?next=/dashboard`).
 4. Optional, for faster local testing: open **Authentication** → **Sign In / Providers** →
    **Email** and turn off **Confirm email**. New organizers can then sign in straight away.
    If you leave it on, Supabase emails a confirmation link (its built-in email service only
@@ -203,3 +205,48 @@ Useful test cards: `4000 0000 0000 9995` (declined, insufficient funds),
 **If the public page says "Reconnecting (refreshing every 15s)":** Realtime is not enabled for the
 tables. Re-run `supabase/migrations/0004_realtime.sql` and check Part B3. Scores still appear, just
 up to 15 seconds late.
+
+---
+
+## Part E — Deploy to Vercel (optional)
+
+Do this after everything works locally.
+
+1. Go to https://vercel.com, sign in with GitHub and click **Add New…** → **Project**. Import the
+   `Volleyball-Tournament-Organizer` repository. Keep the detected **Next.js** settings.
+2. Before clicking **Deploy**, open **Environment Variables** and add every variable from your
+   `.env.local` **except** `STRIPE_WEBHOOK_SECRET` and `NEXT_PUBLIC_APP_URL` (you get those in the
+   next steps). Click **Deploy** and wait for it to finish.
+3. Copy your site address (for example `https://volleyball-tournament-organizer.vercel.app`). In
+   Vercel → **Settings** → **Environment Variables**, add `NEXT_PUBLIC_APP_URL` with that address
+   (no trailing slash).
+4. Supabase → **Authentication** → **URL Configuration**: set **Site URL** to your Vercel address and
+   add `https://<your-vercel-address>/**` under **Redirect URLs**.
+5. Stripe dashboard (test mode) → **Developers** → **Webhooks** → **Add endpoint**:
+   - Endpoint URL: `https://<your-vercel-address>/api/stripe/webhook`
+   - Listen to: **Events on your account**
+   - Events: `checkout.session.completed`, `checkout.session.expired`,
+     `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`
+   - Save, then click **Reveal** under *Signing secret* and copy it (`whsec_...`).
+6. Optional second endpoint for faster payout status updates: **Add endpoint** again with the same
+   URL, choose **Events on Connected accounts** and the event `account.updated`. Copy its signing
+   secret too. (Without it, payout status still updates whenever the organizer opens the dashboard.)
+7. In Vercel, add `STRIPE_WEBHOOK_SECRET`. With one endpoint, paste its secret. With two, paste both
+   separated by a comma, for example `whsec_aaa,whsec_bbb`.
+8. Vercel → **Deployments** → the latest deployment → **⋯** → **Redeploy**, so the new variables
+   take effect.
+9. Repeat Part D on your phone using the Vercel address.
+
+---
+
+## Quick reference: every environment variable
+
+| Variable | Where it comes from | Required |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Connect / Project Settings → Data API | Yes |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Project Settings → API Keys → publishable (or legacy anon) | Yes |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → API Keys → secret (or legacy service_role) | Yes |
+| `STRIPE_SECRET_KEY` | Stripe (test mode) → Developers → API keys → Secret key `sk_test_…` | Yes |
+| `STRIPE_WEBHOOK_SECRET` | `stripe listen` output locally; webhook endpoint secret(s) on Vercel | Yes |
+| `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` locally; your Vercel address in production | Yes |
+| `STRIPE_PLATFORM_FEE_PERCENT` | Your choice, 0 to 50 | No |
