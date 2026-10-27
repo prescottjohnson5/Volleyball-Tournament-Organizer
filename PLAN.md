@@ -1,6 +1,6 @@
 # Build Plan
 
-> **Status:** all six phases are implemented and pushed. Remaining work is manual verification against
+> **Status:** all seven phases are implemented and pushed. Remaining work is manual verification against
 > live Supabase and Stripe test accounts (SETUP_STEPS.md) and the next steps listed in DECISIONS.md.
 
 Short working plan for the Volleyball Tournament Organizer. Each phase ends with a push to `origin/main`.
@@ -43,3 +43,9 @@ Connect (Express, destination charges) routes money to organizers.
 
 ## Phase 6: Polish and docs
 - Mobile polish, empty and error states, README checkboxes, DECISIONS.md and SETUP_STEPS.md final pass.
+
+## Phase 7: Usable by strangers
+- `PAYMENTS_ENABLED` flag (off by default): free, immediate registration; Stripe hidden and never called.
+- Sign-up without confirmation emails; sign-up and sign-in through server routes.
+- "Try it for real" sandbox with Supabase anonymous sign-ins (1 tournament, 8 teams), daily cleanup cron.
+- Per-IP rate limits, plain-English home page with Open Graph tags, GitHub Actions CI.
