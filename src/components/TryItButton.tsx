@@ -2,9 +2,18 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { safeNextPath } from "@/lib/safe-redirect";
 
-/** Starts a sandbox session (no account needed) and opens the organizer dashboard. */
-export function TryItButton({ label = "Try it for real", className = "btn-primary" }: { label?: string; className?: string }) {
+/** Starts a sandbox session (no account needed), then opens `next` (the organizer dashboard by default). */
+export function TryItButton({
+  label = "Try it for real",
+  className = "btn-primary",
+  next,
+}: {
+  label?: string;
+  className?: string;
+  next?: string;
+}) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -19,7 +28,7 @@ export function TryItButton({ label = "Try it for real", className = "btn-primar
       setError(result?.error ?? "Could not start the sandbox. Check your connection and try again.");
       return;
     }
-    router.push("/dashboard");
+    router.push(safeNextPath(next));
     router.refresh();
   }
 

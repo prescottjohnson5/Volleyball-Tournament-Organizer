@@ -4,7 +4,7 @@ import { SetupNotice } from "@/components/SetupNotice";
 import { missingEnv } from "@/lib/env";
 import { AuthForm } from "./AuthForm";
 
-export const metadata: Metadata = { title: "Sign in" };
+export const metadata: Metadata = { title: "Log in" };
 export const dynamic = "force-dynamic";
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; error?: string }> }) {
@@ -12,7 +12,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   if (missing.length > 0) return <SetupNotice missing={missing} />;
   const { next, error } = await searchParams;
   return (
-    <div className="space-y-4">
+    <div className="space-y-6 pt-6">
       {error === "confirmation_failed" && (
         <p className="notice mx-auto max-w-sm text-sm" role="alert">
           That confirmation link did not work (it may have expired or been used already). Try signing in, or sign up again to get a
@@ -20,7 +20,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         </p>
       )}
       <AuthForm mode="login" next={next} />
-      <SandboxHint />
+      <SandboxHint next={next} />
     </div>
   );
 }

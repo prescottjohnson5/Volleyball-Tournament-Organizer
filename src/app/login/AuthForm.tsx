@@ -46,8 +46,13 @@ export function AuthForm({ mode, next }: { mode: Mode; next?: string }) {
   const isLogin = mode === "login";
 
   return (
-    <form onSubmit={onSubmit} className="card mx-auto max-w-sm space-y-4">
-      <h1 className="text-xl font-bold">{isLogin ? "Organizer sign in" : "Create an organizer account"}</h1>
+    <form onSubmit={onSubmit} className="mx-auto max-w-sm space-y-4">
+      <div className="space-y-1 text-center">
+        <h1 className="text-3xl font-extrabold">{isLogin ? "Log in" : "Create an account"}</h1>
+        <p className="text-ink-muted">
+          {safeNextPath(next) === "/dashboard/tournaments/new" ? "to create your tournament." : "to manage your tournaments."}
+        </p>
+      </div>
       <div>
         <label htmlFor="email" className="label">
           Email
@@ -89,21 +94,21 @@ export function AuthForm({ mode, next }: { mode: Mode; next?: string }) {
         </p>
       )}
       <button type="submit" className="btn-primary w-full" disabled={busy}>
-        {busy ? "Please wait…" : isLogin ? "Sign in" : "Create account"}
+        {busy ? "Please wait…" : isLogin ? "Log in" : "Create account"}
       </button>
       <p className="text-center text-sm text-ink-muted">
         {isLogin ? (
           <>
             New organizer?{" "}
-            <Link href="/signup" className="link">
+            <Link href={next ? `/signup?next=${encodeURIComponent(next)}` : "/signup"} className="link">
               Create an account
             </Link>
           </>
         ) : (
           <>
             Already have an account?{" "}
-            <Link href="/login" className="link">
-              Sign in
+            <Link href={next ? `/login?next=${encodeURIComponent(next)}` : "/login"} className="link">
+              Log in
             </Link>
           </>
         )}

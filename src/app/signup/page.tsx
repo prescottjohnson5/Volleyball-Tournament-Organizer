@@ -7,13 +7,14 @@ import { AuthForm } from "../login/AuthForm";
 export const metadata: Metadata = { title: "Create account" };
 export const dynamic = "force-dynamic";
 
-export default function SignupPage() {
+export default async function SignupPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
   const missing = missingEnv(["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY"]);
   if (missing.length > 0) return <SetupNotice missing={missing} />;
+  const { next } = await searchParams;
   return (
-    <div className="space-y-4">
-      <AuthForm mode="signup" />
-      <SandboxHint />
+    <div className="space-y-6 pt-6">
+      <AuthForm mode="signup" next={next} />
+      <SandboxHint next={next} />
     </div>
   );
 }
