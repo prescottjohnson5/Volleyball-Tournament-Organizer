@@ -8,6 +8,8 @@ export class HttpError extends Error {
   constructor(
     public readonly status: number,
     message: string,
+    /** Extra response headers, such as Retry-After. */
+    public readonly headers: Record<string, string> = {},
   ) {
     super(message);
     this.name = "HttpError";
@@ -20,7 +22,11 @@ export function jsonError(status: number, message: string, details?: unknown) {
 
 /** Converts thrown errors into JSON responses with the right status and no internal details. */
 export function toErrorResponse(error: unknown) {
-  if (error instanceof HttpError) return jsonError(error.status, error.message);
+  if (error instanceof HttpError) {
+    const response = jsonError(error.status, error.message);
+    for (const [name, value] of Object.entries(error.headers)) response.headers.set(name, value);
+    return response;
+  }
   if (error instanceof MissingEnvError) return jsonError(503, error.message);
   if (error instanceof UserFacingError) return jsonError(error.status, error.message);
   if (error instanceof ZodError) {
