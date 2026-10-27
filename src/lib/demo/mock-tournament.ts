@@ -56,5 +56,6 @@ export function buildDemoTournament(options: DemoOptions): TournamentView {
     maxTeams: 32,
     status: "in_progress",
     championTeamId: null,
+    isSandbox: false,
   });
 }

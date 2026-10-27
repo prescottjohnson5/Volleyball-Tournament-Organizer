@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { SandboxBanner } from "@/components/SandboxBanner";
 import { SetupNotice } from "@/components/SetupNotice";
 import { countPublicPaidTeams, getPublicTournament } from "@/lib/data/public";
 import { missingEnv } from "@/lib/env";
@@ -42,6 +43,7 @@ export default async function RegisterPage({
 
   return (
     <div className="mx-auto max-w-lg space-y-5">
+      {tournament.is_sandbox && <SandboxBanner />}
       <header className="space-y-1">
         <p className="text-sm font-medium text-brand-700">Team registration</p>
         <h1 className="text-2xl font-bold">{tournament.name}</h1>

@@ -61,6 +61,8 @@ export interface TournamentView {
     maxTeams: number;
     status: TournamentStatus;
     championTeamId: string | null;
+    /** Sandbox tournaments are deleted daily; pages show a banner. */
+    isSandbox: boolean;
   };
   teams: ViewTeam[];
   matches: ViewMatch[];
@@ -91,6 +93,7 @@ export function viewFromRows(
       maxTeams: tournament.max_teams,
       status: tournament.status,
       championTeamId: tournament.champion_team_id,
+      isSandbox: tournament.is_sandbox,
     },
     teams: teams.map((t) => ({ id: t.id, name: t.name, seed: t.seed, pool: t.pool })),
     matches: [...matches]

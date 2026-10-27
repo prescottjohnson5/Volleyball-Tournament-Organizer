@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SandboxBanner } from "@/components/SandboxBanner";
 import { SetupNotice } from "@/components/SetupNotice";
 import { loadTournamentView } from "@/lib/data/tournament-view";
 import { missingEnv } from "@/lib/env";
@@ -30,7 +31,8 @@ export default async function CaptainPage({ params }: { params: Promise<{ token:
 
   const view = await loadTournamentView(db, captain.tournament);
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="mx-auto max-w-2xl space-y-4">
+      {view.tournament.isSandbox && <SandboxBanner />}
       <CaptainPanel initialView={view} teamId={captain.team.id} token={token} />
     </div>
   );
