@@ -129,7 +129,39 @@ the internet, so the Stripe CLI forwards those calls to it.
    computer.
 3. Restart `npm run dev` in your other PowerShell window so it reads the new values.
 
-### C4. Make a test registration
+`stripe listen` also forwards events from connected accounts (such as `account.updated`), so one
+command covers everything locally.
+
+### C4. Turn on Stripe Connect (one time, for the platform)
+Registration fees are paid into each organizer's own Stripe Express account (a "destination
+charge"), so your Stripe account must be a Connect platform, even in test mode.
+1. In the Stripe dashboard (test mode), open **Connect** from the left menu (or search for
+   "Connect") and click **Get started**. When asked, choose that you are building a **platform or
+   marketplace** and that sellers/service providers get paid. Follow the prompts until you reach the
+   Connect overview page.
+2. Open **Settings** (gear icon) → **Connect** → **Branding** and fill in a **business name**,
+   an **icon** (any square image) and a **brand color**, then **Save**. Stripe refuses to create
+   Express onboarding links until branding is set.
+3. Optional platform fee: add `STRIPE_PLATFORM_FEE_PERCENT=5` to `.env.local` to keep 5% of each
+   registration. Leave it empty for no fee. Restart `npm run dev` after changing it.
+
+### C5. Set up payouts as an organizer (test data)
+1. Open http://localhost:3000/dashboard. The yellow **Set up payouts** box is at the top. Click
+   **Set up payouts with Stripe**.
+2. Stripe's Express onboarding opens. In test mode, use test data:
+   - If you see a **Use test data** / **Skip this form** button, click it.
+   - Otherwise: phone `000 000 0000`, SMS code `000000`, business type **Individual**, any name,
+     date of birth `01/01/1901`, SSN `000-00-0000` (or last 4 `0000`), address line 1
+     `address_full_match`, bank routing number `110000000`, account number `000123456789`,
+     website `https://accessible.stripe.com`.
+3. When you finish, Stripe returns you to the dashboard and the box turns into **✅ Payouts ready**.
+   If it still says *Finish payout setup*, click **Continue Stripe setup** and complete any
+   remaining step. (Status is re-checked every time you open the dashboard.)
+
+If clicking the button shows an error starting with `Stripe:`, read it: it usually means step C4
+(Connect sign-up or branding) is not finished.
+
+### C6. Make a test registration
 1. Sign in at http://localhost:3000/dashboard, open a tournament and click **Copy link** under
    *Registration link* (or scan the QR code with your phone if your phone can reach your computer).
 2. Fill in a team name, your name and an email, then click **Pay … and register**.
@@ -139,6 +171,10 @@ the internet, so the Stripe CLI forwards those calls to it.
    private captain link. In the `stripe listen` window you will see `checkout.session.completed`
    with a `[200]` response.
 5. Refresh the organizer dashboard: the team is listed as paid.
+6. To see where the money went: on the dashboard click **Open Stripe Express dashboard** (the
+   organizer's view), or in your platform's Stripe dashboard open **Connect** → **Connected
+   accounts** → the account → **Activity**. The payment shows as a transfer to that account, minus
+   the platform fee if you set one.
 
 **If the success page keeps saying "Confirming your payment…":** the webhook is not reaching the
 app. Check that `stripe listen` is still running, that `STRIPE_WEBHOOK_SECRET` matches what it
@@ -151,7 +187,7 @@ Useful test cards: `4000 0000 0000 9995` (declined, insufficient funds),
 
 ## Part D — Run a tournament end to end (scores and live updates)
 
-1. Register at least **3** teams using Part C4 (use a different team name each time). Keep each
+1. Register at least **3** teams using Part C6 (use a different team name each time). Keep each
    captain link (open them in different browser profiles or a private window).
 2. On the organizer dashboard, click **Start tournament** → **Yes, start**. The schedule is
    generated and the *Matches* list appears.
