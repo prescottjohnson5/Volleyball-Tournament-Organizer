@@ -2,6 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, TournamentRow } from "@/lib/supabase/database.types";
 import { createSupabasePublicClient } from "@/lib/supabase/public";
+import { BROWSE_LIMIT, escapeLikePattern, sortForBrowsing, type TournamentListItem } from "@/lib/tournaments/browse";
 import type { TournamentView } from "@/lib/view";
 import { loadTournamentView } from "./tournament-view";
 
@@ -28,4 +29,16 @@ export async function getTournamentView(slug: string, db: Db = createSupabasePub
   const tournament = await getPublicTournament(slug, db);
   if (!tournament) return null;
   return loadTournamentView(db, tournament);
+}
+
+/**
+ * Tournaments anyone can browse, optionally filtered by name. Sandbox tournaments are left out: they are
+ * named by anonymous visitors and deleted daily, so they are reachable by link but never listed.
+ */
+export async function listPublicTournaments(query: string, db: Db = createSupabasePublicClient()): Promise<TournamentListItem[]> {
+  let request = db.from("tournaments").select("id, slug, name, event_date, location, status").eq("is_sandbox", false);
+  if (query) request = request.ilike("name", `%${escapeLikePattern(query)}%`);
+  const { data, error } = await request.order("event_date", { ascending: false }).limit(BROWSE_LIMIT);
+  if (error) throw error;
+  return sortForBrowsing(data);
 }
