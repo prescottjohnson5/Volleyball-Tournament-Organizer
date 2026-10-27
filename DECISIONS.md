@@ -163,8 +163,9 @@ any team count, and the engine treats byes like any other result.
   within the same finishing tier so pool-mates do not meet in the first playoff round.
 - With a single pool at least two teams advance, so there is always a final.
 
-### 15. Seeding = payment order
-**Choice.** Seed 1 is the first team whose payment was confirmed.
+### 15. Seeding = registration order
+**Choice.** Seed 1 is the first team whose registration was confirmed (with payments on, the first
+whose payment was confirmed).
 
 **Why.** It is deterministic, needs no extra UI and rewards early registration.
 
@@ -332,14 +333,126 @@ Account creation uses an idempotency key per organizer so a double click cannot 
 
 ---
 
+## Making it usable by strangers: payments flag, sandbox and rate limits
+
+The app is meant to be tried by reviewers who will not set up Stripe, will not wait for confirmation
+emails, and should not need an account. These decisions make that possible without weakening the
+paid path.
+
+### 31. Payments sit behind `PAYMENTS_ENABLED` (off by default)
+**Choice.** Payments run only when `PAYMENTS_ENABLED` is exactly `true`. When it is off, the fee field,
+payout panel and every Stripe call disappear; registration confirms the team immediately and shows the
+captain link; the Stripe webhook and Connect routes answer 404; and no Stripe variable is required.
+The payment code is untouched and still tested: the route tests run in both modes, and turning the
+flag on restores the original behaviour.
+
+**Why.** Stripe test mode still needs an account, Connect onboarding, branding and a webhook
+forwarder. That is a lot to ask of someone who wants to see the app work for five minutes, and none
+of it is what they are evaluating. Off by default also means a fresh deployment never takes payments
+by accident. A server-only flag (not `NEXT_PUBLIC_`) can be flipped in Vercel without a rebuild; pages
+read it on the server and pass it to client components as props.
+
+**Tradeoff.** Two registration paths to keep working. I kept the split at a single decision point
+(`collectsFees(tournament)`: payments on and the tournament has a fee) so pages and routes cannot
+disagree, and the 404 for Stripe routes makes the disabled surface truly absent rather than
+half-working.
+
+### 32. Free registration is one SQL function, and "paid" means "confirmed"
+**Choice.** `register_free_team` locks the tournament row, checks status, capacity and name, and inserts
+the team and its private captain row (with the token hash), all in one transaction. The team is stored
+with `payment_status = 'paid'` and no Stripe ids.
+
+**Why.** The paid path already treats `paid` as "this team counts": public RLS, the unique-name index,
+capacity checks, seeding and the dashboard all key off it. Reusing it means none of those needed a
+second branch. The lock gives the same no-overbooking guarantee as `confirm_team_payment` (19).
+
+**Tradeoff.** The column name now overstates things for free teams. Renaming it to
+`registration_status` is the honest fix, but it touches every migration, policy and query, so it is
+listed as a cleanup rather than mixed into this change.
+
+### 33. Sign-up works without email confirmation, through server routes
+**Choice.** SETUP_STEPS tells the operator to turn **Confirm email** off in Supabase, and sign-up and
+sign-in now go through `/api/auth/signup` and `/api/auth/signin`, which set the session cookie on
+their response. If a project still requires confirmation, the form says so instead of assuming it.
+
+**Why.** Supabase's built-in email sender allows only a few messages per hour, and a reviewer should
+not have to wait for one. Moving the calls to the server is what makes them rate-limitable (35) and
+gives one place to turn Supabase's error codes into plain messages.
+
+**Tradeoff.** Anyone can create an account with an address they do not own. For a demo with no money
+involved (payments off) that is acceptable; with payments on, an operator should turn confirmation
+back on, which the code still supports (`/auth/callback`).
+
+### 34. "Try it" uses Supabase anonymous sign-ins and a capped, self-deleting sandbox
+**Choice.** **Try it for real** calls `/api/sandbox`, which signs the visitor in with
+`signInAnonymously()` and creates an `organizer_profiles` row with `is_sandbox = true`. Sandbox
+organizers get one tournament of at most 8 teams, never a fee, a "Sandbox: data is deleted daily."
+banner, and everything is deleted after 24 hours (36).
+
+**Why.** A shared demo login lets visitors vandalise each other's data, and a fake mode would not
+prove the real thing works. Anonymous sign-ins give every visitor a private, real organizer session
+that goes through the same RLS, routes and SQL as a normal account, with no email and no password.
+
+The limits are enforced twice: the API returns a friendly message, and the database has a `CHECK`
+(`max_teams <= 8`, fee 0) and a partial unique index (one sandbox tournament per organizer). The
+index also closes the race where two tabs create a tournament at the same moment.
+
+**Tradeoff.** Anonymous sign-ins make it cheap to create users, which is why the endpoint is rate
+limited per IP (on top of Supabase's own limit on anonymous sign-ins). A sandbox cannot yet be
+upgraded into a real account; creating an account starts fresh. Supabase supports linking an email
+to an anonymous user, so this is a straightforward follow-up.
+
+### 35. Rate limits are per IP, stored in Postgres, and fail open
+**Choice.** `enforceRateLimit(request, name)` counts hits in fixed windows with one atomic upsert
+(`rate_limit_hit`) and returns a 429 with a plain-English message and `Retry-After`. Limits: sign-up
+5 per hour, sign-in 10 per 15 minutes, sandbox 5 per hour, registration 10 per 10 minutes, score
+reports 60 per 10 minutes, captain link claim 120 per 10 minutes (the success page polls). The IP
+comes from `x-forwarded-for` (set by Vercel) and is stored only as a SHA-256 prefix.
+
+**Why Postgres.** Serverless functions do not share memory, so an in-memory counter would reset on
+every cold start and differ per instance. A Redis service (Upstash, Vercel KV) is the textbook answer,
+but it is one more account and two more secrets for whoever deploys this. The database is already
+there, and one indexed upsert per request is cheap at this scale.
+
+**Why fail open.** If the counter query fails, the request goes through and the error is logged. A
+rate-limit outage should not take registration down mid-tournament; the routes behind it have their
+own protections (validation, capacity locks, unguessable tokens).
+
+**Tradeoff.** Fixed windows allow a burst of up to twice the limit across a window boundary, and
+people behind one NAT share a budget (the limits are generous for that reason). The QR route is not
+limited: it touches no database and is cached for an hour.
+
+### 36. Daily cleanup is a cron route protected by `CRON_SECRET`
+**Choice.** `vercel.json` schedules `GET /api/cron/cleanup` daily. The route compares
+`Authorization: Bearer <CRON_SECRET>` in constant time, deletes sandbox tournaments and sandbox users
+older than 24 hours, and prunes old rate-limit rows. Deleting the auth user cascades through profile,
+tournaments, teams, matches and sets; a PGlite test plays a tournament and checks nothing is left.
+Without `CRON_SECRET` the route answers 503 and deletes nothing.
+
+**Why.** Vercel Cron sends the secret automatically, so there is nothing else to configure. Failing
+closed when the secret is missing means a misconfigured deployment cannot expose a public "delete
+data" endpoint. The logic takes its storage operations as parameters, so it is unit tested without
+Supabase.
+
+**Tradeoff.** Data can live up to about 48 hours (24 hours of age plus a daily run). Each run deletes
+at most 500 sandbox users, ten at a time, and reports `moreUsersRemaining`; a busier site would run
+it hourly.
+
+### 37. CI runs the same `npm run check`, with no secrets
+GitHub Actions runs lint, type-check and the full test suite on every push. Because the database tests
+run the real migrations in PGlite, CI needs no Supabase project, no Docker and no secrets.
+
+---
+
 ## Product rules (simplest reasonable option)
 
 | Question | Decision | Why |
 |---|---|---|
-| Free tournaments? | Fee must be $1.00–$10,000. | Stripe's minimum charge is $0.50; free events would need a second registration path. Out of scope. |
+| Free tournaments? | Always free while payments are off. With payments on, the fee must be $1.00–$10,000, except sandbox tournaments, which are always free. | Stripe's minimum charge is $0.50. A tournament created while payments were off keeps a $0 fee and stays free. |
 | Minimum teams | 3 | Two teams is a single match, not a tournament. |
 | Editing a tournament | Only while registration is open. Max teams cannot drop below the number of paid teams. | Changing format or rules after the bracket exists would invalidate it. |
-| Deleting a tournament | Refused once any team has paid. | Deleting would orphan real (test) payments. Cancelling with refunds is out of scope. |
+| Deleting a tournament | Refused once any team is registered. | Deleting would orphan real (test) payments. Cancelling with refunds is out of scope. |
+| Sandbox limits | 1 tournament, up to 8 teams, no fee, deleted after 24 hours. | Enough to try every feature, too small to be worth abusing. |
 | Public URL | `/t/<name>-<6 random chars>` | Readable, shareable, not guessable by counting. |
 | Organizer session check | `supabase.auth.getClaims()` on the server | It verifies the JWT; `getSession()` only reads the cookie. |
 
@@ -350,16 +463,19 @@ Account creation uses an idempotency key per organizer so a double click cannot 
 Honest gaps, roughly in the order I would tackle them:
 
 1. **Verify against live services.** Everything is covered by automated tests, but the full flow has not
-   been run against a real Supabase project and Stripe test account yet (see SETUP_STEPS.md).
-2. **Rate limiting** on public routes (`/api/register/*`, `/api/captain/*`). Captain tokens are
-   unguessable, but a rate limit (for example Vercel KV or Upstash) would stop abusive registration
-   attempts.
-3. **Seeding control.** Seeds follow payment order. A drag-to-reorder screen before starting the
+   been run against a real Supabase project (and, with payments on, a Stripe test account) yet. See
+   SETUP_STEPS.md.
+2. **Upgrade a sandbox into a real account** by linking an email to the anonymous user, instead of
+   starting fresh.
+3. **Seeding control.** Seeds follow registration order. A drag-to-reorder screen before starting the
    tournament would let organizers seed by skill.
-4. **Generated database types.** Switch `database.types.ts` to `supabase gen types` output in CI once
+4. **Rename `payment_status` to `registration_status`** now that free registration exists (32).
+5. **Generated database types.** Switch `database.types.ts` to `supabase gen types` output in CI once
    the CLI is acceptable as a dev dependency.
-5. **Cleanup job** for old `pending` and `expired` registrations.
-6. **Cancel a tournament with refunds.** Deletion is refused once teams have paid; a "cancel and
+6. **Extend the daily cleanup** to old `pending` and `expired` paid registrations.
+7. **Cancel a tournament with refunds.** Deletion is refused once teams have registered; a "cancel and
    refund everyone" action would close that gap.
-7. **Browser tests.** Unit and SQL tests cover the logic; a Playwright smoke test against a seeded
+8. **Browser tests.** Unit and SQL tests cover the logic; a Playwright smoke test against a seeded
    Supabase project would cover the pages and Realtime end to end.
+9. **CAPTCHA on sign-up and "Try it"** if rate limits alone are not enough (Supabase supports
+   hCaptcha and Turnstile for auth).
