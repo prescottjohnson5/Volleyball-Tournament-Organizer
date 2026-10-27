@@ -32,8 +32,8 @@ export default async function PublicTournamentPage({ params }: Props) {
     <div className="space-y-4">
       {view.tournament.isSandbox && <SandboxBanner />}
       {view.tournament.status === "registration" && (
-        <div className="card flex flex-wrap items-center justify-between gap-3 border-brand-100 bg-brand-50">
-          <p className="text-sm text-slate-800">
+        <div className="card flex flex-wrap items-center justify-between gap-3 border-teal/60 bg-teal/10">
+          <p className="text-sm text-ink">
             Registration is open: {view.teams.length} of {view.tournament.maxTeams} teams so far.
           </p>
           <Link href={`/t/${slug}/register`} className="btn-primary">

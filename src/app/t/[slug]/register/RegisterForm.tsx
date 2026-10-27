@@ -63,10 +63,10 @@ export function RegisterForm({ slug, feeLabel }: { slug: string; feeLabel: strin
           value={captainEmail}
           onChange={(e) => setCaptainEmail(e.target.value)}
         />
-        <p className="mt-1 text-xs text-slate-500">Only the organizer can see this.</p>
+        <p className="mt-1 text-xs text-ink-subtle">Only the organizer can see this.</p>
       </div>
       {error && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-sm text-red-300">
           {error}
         </p>
       )}
@@ -74,9 +74,9 @@ export function RegisterForm({ slug, feeLabel }: { slug: string; feeLabel: strin
         {feeLabel ? (busy ? "Opening secure checkout…" : `Pay ${feeLabel} and register`) : busy ? "Registering…" : "Register team"}
       </button>
       {feeLabel ? (
-        <p className="text-center text-xs text-slate-500">Payments are processed by Stripe (test mode). Your team is registered once payment is confirmed.</p>
+        <p className="text-center text-xs text-ink-subtle">Payments are processed by Stripe (test mode). Your team is registered once payment is confirmed.</p>
       ) : (
-        <p className="text-center text-xs text-slate-500">You will get a private captain link for reporting scores as soon as you register.</p>
+        <p className="text-center text-xs text-ink-subtle">You will get a private captain link for reporting scores as soon as you register.</p>
       )}
     </form>
   );

@@ -14,7 +14,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   return (
     <div className="space-y-4">
       {error === "confirmation_failed" && (
-        <p className="card mx-auto max-w-sm border-amber-300 bg-amber-50 text-sm text-amber-900" role="alert">
+        <p className="notice mx-auto max-w-sm text-sm" role="alert">
           That confirmation link did not work (it may have expired or been used already). Try signing in, or sign up again to get a
           new link.
         </p>

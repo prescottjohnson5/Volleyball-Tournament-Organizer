@@ -38,11 +38,11 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Your tournaments</h1>
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-ink-muted">
             {organizer.isSandbox ? (
               <>
                 Sandbox organizer.{" "}
-                <Link href="/signup" className="text-brand-700 underline">
+                <Link href="/signup" className="link">
                   Create a free account
                 </Link>{" "}
                 to keep your tournaments (sandbox data is not moved over).
@@ -67,7 +67,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       </div>
 
       {tournaments.length === 0 ? (
-        <div className="card text-center text-slate-600">
+        <div className="card text-center text-ink-muted">
           <p>No tournaments yet.</p>
           <p className="mt-1 text-sm">Create one to get a registration link and QR code.</p>
         </div>
@@ -75,17 +75,17 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         <ul className="grid gap-3 sm:grid-cols-2">
           {tournaments.map((t) => (
             <li key={t.id}>
-              <Link href={`/dashboard/tournaments/${t.id}`} className="card block hover:border-brand-500">
+              <Link href={`/dashboard/tournaments/${t.id}`} className="card block hover:border-teal">
                 <div className="flex items-start justify-between gap-2">
                   <h2 className="font-semibold">{t.name}</h2>
-                  <span className="shrink-0 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700">
+                  <span className="shrink-0 rounded-full bg-teal/20 px-2.5 py-0.5 text-xs font-semibold text-teal-300">
                     {STATUS_LABELS[t.status]}
                   </span>
                 </div>
-                <p className="mt-1 text-sm text-slate-600">
+                <p className="mt-1 text-sm text-ink-muted">
                   {formatEventDate(t.event_date)} · {t.location}
                 </p>
-                <p className="mt-2 text-sm text-slate-700">
+                <p className="mt-2 text-sm text-ink-muted">
                   {FORMAT_LABELS[t.format]} · {t.paidTeams}/{t.max_teams} teams {collectsFees(t) ? "paid" : "registered"}
                   {collectsFees(t) && <> · {formatCents(t.registration_fee_cents, t.currency)}</>}
                 </p>

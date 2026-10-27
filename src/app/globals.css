@@ -1,42 +1,74 @@
 @import "tailwindcss";
 
+/*
+ * Palette: midnight #0D0B61, steel #294669, teal #478B8D, sun #E4D329.
+ * One dark theme everywhere. Yellow is kept for the main action on a screen; teal marks accents and links.
+ */
 @theme {
-  --color-brand-50: #eff8ff;
-  --color-brand-100: #dbeefe;
-  --color-brand-500: #1f7ae0;
-  --color-brand-600: #1764bf;
-  --color-brand-700: #154f96;
-  --color-accent-400: #fbbf24;
-  --color-accent-500: #f59e0b;
+  --font-sans: "Figtree Variable", ui-sans-serif, system-ui, sans-serif;
+
+  --color-midnight-950: #07063a;
+  --color-midnight-900: #0d0b61;
+  --color-midnight-800: #15146d;
+  --color-steel: #294669;
+  --color-teal: #478b8d;
+  --color-teal-300: #8fcfd1;
+  --color-sun: #e4d329;
+  --color-sun-200: #f1e77f;
+  --color-sun-100: #f7f0b8;
+
+  /* Text on midnight: all of these pass WCAG AA for body text. */
+  --color-ink: #ffffff;
+  --color-ink-muted: #c9cce6;
+  --color-ink-subtle: #9aa1c9;
+  --color-ink-faint: #7c84b5;
+  --color-line: #294669;
 }
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
 }
 
 body {
-  @apply bg-slate-50 text-slate-900 antialiased;
+  @apply bg-midnight-900 font-sans text-ink antialiased;
+}
+
+::selection {
+  @apply bg-sun text-midnight-900;
 }
 
 /* Shared building blocks so pages stay consistent without a component library. */
 @utility card {
-  @apply rounded-xl border border-slate-200 bg-white p-4 shadow-sm;
+  @apply rounded-2xl border border-line bg-midnight-800/60 p-4;
 }
 @utility btn {
-  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 py-2 text-sm font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sun disabled:cursor-not-allowed disabled:opacity-50;
 }
 @utility btn-primary {
-  @apply btn bg-brand-600 text-white hover:bg-brand-700;
+  @apply btn bg-sun text-midnight-900 hover:bg-sun-200;
 }
 @utility btn-secondary {
-  @apply btn border border-slate-300 bg-white text-slate-800 hover:bg-slate-100;
+  @apply btn border border-ink-faint text-ink hover:border-ink hover:bg-white/5;
 }
 @utility btn-danger {
-  @apply btn bg-red-600 text-white hover:bg-red-700;
+  @apply btn bg-red-500 text-white hover:bg-red-600;
 }
 @utility input {
-  @apply block min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none;
+  @apply block min-h-11 w-full rounded-xl border border-steel bg-midnight-950 px-3 py-2 text-base text-ink placeholder:text-ink-faint focus:border-sun focus:ring-2 focus:ring-sun/30 focus:outline-none;
 }
 @utility label {
-  @apply mb-1 block text-sm font-medium text-slate-700;
+  @apply mb-1 block text-sm font-semibold text-ink-muted;
+}
+@utility notice {
+  @apply rounded-2xl border border-sun/40 bg-sun/10 p-4 text-sun-100;
+}
+@utility link {
+  @apply font-semibold text-teal-300 underline underline-offset-2 hover:text-sun;
+}
+
+@layer base {
+  h1,
+  h2 {
+    @apply tracking-tight;
+  }
 }

@@ -10,12 +10,12 @@ export default async function NewTournamentPage() {
   const sandboxFull = organizer.isSandbox && (await listOrganizerTournaments(organizer.id)).length >= SANDBOX_MAX_TOURNAMENTS;
   return (
     <>
-      <Link href="/dashboard" className="text-sm text-brand-700 underline">
+      <Link href="/dashboard" className="text-sm link">
         ← All tournaments
       </Link>
       <h1 className="text-2xl font-bold">New tournament</h1>
       {sandboxFull ? (
-        <p className="card text-slate-700">{SANDBOX_ONE_TOURNAMENT_MESSAGE}</p>
+        <p className="card text-ink-muted">{SANDBOX_ONE_TOURNAMENT_MESSAGE}</p>
       ) : (
         <TournamentForm
           mode="create"

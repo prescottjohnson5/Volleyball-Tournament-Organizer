@@ -95,7 +95,7 @@ export function TournamentForm({ mode, initial, tournamentId, showFee, maxTeamsL
           {(["indoor", "outdoor"] as const).map((value) => (
             <label
               key={value}
-              className={`btn-secondary cursor-pointer capitalize ${environment === value ? "border-brand-500 bg-brand-50 text-brand-700" : ""}`}
+              className={`btn-secondary cursor-pointer capitalize ${environment === value ? "border-sun bg-sun/10 text-sun" : ""}`}
             >
               <input
                 type="radio"
@@ -137,7 +137,7 @@ export function TournamentForm({ mode, initial, tournamentId, showFee, maxTeamsL
       </div>
 
       {format === "pool_to_single_elim" && (
-        <div className="grid gap-4 rounded-lg bg-slate-50 p-3 sm:grid-cols-2">
+        <div className="grid gap-4 rounded-lg bg-midnight-950/60 p-3 sm:grid-cols-2">
           <div>
             <label htmlFor="poolSize" className="label">
               Target pool size
@@ -183,7 +183,7 @@ export function TournamentForm({ mode, initial, tournamentId, showFee, maxTeamsL
       </div>
 
       {error && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-sm text-red-300">
           {error}
         </p>
       )}

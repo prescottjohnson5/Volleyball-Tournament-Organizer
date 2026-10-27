@@ -25,8 +25,8 @@ export function RegenerateCaptainLink({ tournamentId, teamId, teamName }: { tour
 
   if (link) {
     return (
-      <div className="mt-2 space-y-1 rounded-lg bg-slate-100 p-2">
-        <p className="text-xs text-slate-700">New captain link for {teamName} (shown once; the old link no longer works):</p>
+      <div className="mt-2 space-y-1 rounded-lg bg-midnight-950 p-2">
+        <p className="text-xs text-ink-muted">New captain link for {teamName} (shown once; the old link no longer works):</p>
         <p className="font-mono text-xs break-all">{link}</p>
         <button type="button" className="btn-secondary min-h-9 py-1" onClick={() => navigator.clipboard.writeText(link)}>
           Copy
@@ -40,20 +40,20 @@ export function RegenerateCaptainLink({ tournamentId, teamId, teamName }: { tour
       {confirming ? (
         <span className="flex flex-wrap items-center gap-2 text-xs">
           Replace {teamName}&apos;s captain link?
-          <button type="button" className="font-semibold text-brand-700 underline" onClick={regenerate} disabled={busy}>
+          <button type="button" className="link" onClick={regenerate} disabled={busy}>
             {busy ? "Working…" : "Yes, new link"}
           </button>
-          <button type="button" className="text-slate-600 underline" onClick={() => setConfirming(false)}>
+          <button type="button" className="text-ink-subtle underline underline-offset-2 hover:text-ink" onClick={() => setConfirming(false)}>
             Cancel
           </button>
         </span>
       ) : (
-        <button type="button" className="text-xs font-medium text-brand-700 underline" onClick={() => setConfirming(true)}>
+        <button type="button" className="text-xs link" onClick={() => setConfirming(true)}>
           New captain link
         </button>
       )}
       {error && (
-        <p role="alert" className="text-xs text-red-700">
+        <p role="alert" className="text-xs text-red-300">
           {error}
         </p>
       )}

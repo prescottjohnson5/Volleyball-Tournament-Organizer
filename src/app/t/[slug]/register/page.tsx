@@ -45,12 +45,12 @@ export default async function RegisterPage({
     <div className="mx-auto max-w-lg space-y-5">
       {tournament.is_sandbox && <SandboxBanner />}
       <header className="space-y-1">
-        <p className="text-sm font-medium text-brand-700">Team registration</p>
+        <p className="text-sm font-medium text-teal-300">Team registration</p>
         <h1 className="text-2xl font-bold">{tournament.name}</h1>
-        <p className="text-slate-600">
+        <p className="text-ink-muted">
           {formatEventDate(tournament.event_date)} · {tournament.location}
         </p>
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-ink-muted">
           <span className="capitalize">{tournament.environment}</span> · {FORMAT_LABELS[tournament.format]} · {describeRuleset(rules)}
         </p>
       </header>
@@ -59,33 +59,33 @@ export default async function RegisterPage({
         {fee && (
           <div className="card">
             <p className="text-2xl font-bold">{fee}</p>
-            <p className="text-xs text-slate-500">per team</p>
+            <p className="text-xs text-ink-subtle">per team</p>
           </div>
         )}
         <div className="card">
           <p className="text-2xl font-bold">{spotsLeft}</p>
-          <p className="text-xs text-slate-500">of {tournament.max_teams} spots left</p>
+          <p className="text-xs text-ink-subtle">of {tournament.max_teams} spots left</p>
         </div>
       </div>
 
       {cancelled && (
-        <p className="card border-amber-300 bg-amber-50 text-sm text-amber-900" role="status">
+        <p className="notice text-sm" role="status">
           Checkout was cancelled. Nothing was charged and your team is not registered yet.
         </p>
       )}
 
       {open && !paymentsReady ? (
-        <p className="card text-slate-700">Registration opens as soon as the organizer finishes setting up payments. Check back soon.</p>
+        <p className="card text-ink-muted">Registration opens as soon as the organizer finishes setting up payments. Check back soon.</p>
       ) : open ? (
         <RegisterForm slug={tournament.slug} feeLabel={fee} />
       ) : (
-        <p className="card text-slate-700">
+        <p className="card text-ink-muted">
           {tournament.status === "registration" ? "This tournament is full." : "Registration for this tournament is closed."}
         </p>
       )}
 
       <p className="text-center text-sm">
-        <Link href={`/t/${tournament.slug}`} className="text-brand-700 underline">
+        <Link href={`/t/${tournament.slug}`} className="link">
           View the tournament page
         </Link>
       </p>

@@ -36,7 +36,7 @@ export function BracketView({ view }: { view: TournamentView }) {
   const bracketMatches = view.matches.filter((m) => m.phase === "bracket");
   if (bracketMatches.length === 0) {
     return (
-      <p className="card text-sm text-slate-600">
+      <p className="card text-sm text-ink-muted">
         {view.tournament.format === "pool_to_single_elim"
           ? "The playoff bracket is created automatically when every pool match is finished."
           : "The bracket appears when the organizer starts the tournament."}
@@ -49,7 +49,7 @@ export function BracketView({ view }: { view: TournamentView }) {
     <div className="space-y-4">
       {sections.map((side) => (
         <section key={side} aria-label={single ? "Playoffs" : SECTION_TITLES[side]}>
-          {!single && <h3 className="mb-2 text-sm font-semibold text-slate-700">{SECTION_TITLES[side]}</h3>}
+          {!single && <h3 className="mb-2 text-sm font-semibold text-ink-muted">{SECTION_TITLES[side]}</h3>}
           <Columns matches={bracketMatches.filter((m) => m.bracket === side)} view={view} />
         </section>
       ))}

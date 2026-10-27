@@ -61,9 +61,9 @@ export function ReportSetForm({
   }
 
   return (
-    <form onSubmit={onSubmit} className="mt-3 space-y-3 border-t border-slate-100 pt-3">
+    <form onSubmit={onSubmit} className="mt-3 space-y-3 border-t border-line pt-3">
       <p className="text-sm font-semibold">
-        Report set {setNumber} <span className="font-normal text-slate-500">(played to {target}, win by {rules.winBy})</span>
+        Report set {setNumber} <span className="font-normal text-ink-subtle">(played to {target}, win by {rules.winBy})</span>
       </p>
       <div className="grid grid-cols-2 gap-3">
         <label>
@@ -82,12 +82,12 @@ export function ReportSetForm({
         </label>
       </div>
       {error && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-sm text-red-300">
           {error}
         </p>
       )}
       {saved && (
-        <p role="status" className="text-sm text-green-700">
+        <p role="status" className="text-sm text-emerald-300">
           {saved}
         </p>
       )}

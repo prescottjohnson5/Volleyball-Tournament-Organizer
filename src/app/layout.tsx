@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
+import "@fontsource-variable/figtree";
 import Link from "next/link";
+import { LogoMark } from "@/components/Icons";
 import "./globals.css";
 
 const DESCRIPTION =
@@ -46,27 +48,29 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#1764bf",
+  themeColor: "#07063a",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body className="flex min-h-dvh flex-col">
-        <header className="border-b border-slate-200 bg-white">
-          <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-            <Link href="/" className="flex items-center gap-2 font-bold text-brand-700">
-              <span aria-hidden className="text-xl">
-                🏐
-              </span>
+        <header className="bg-midnight-950">
+          <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3">
+            <Link href="/" className="flex items-center gap-2.5 text-lg font-extrabold tracking-tight">
+              <LogoMark />
               <span>Tournament Organizer</span>
             </Link>
-            <nav className="flex gap-4 text-sm">
-              <Link href="/demo" className="font-medium text-slate-600 hover:text-brand-700">
+            <nav className="flex items-center gap-5 text-sm font-bold">
+              <Link href="/demo" className="hidden text-ink-muted hover:text-ink sm:inline">
                 Demo
               </Link>
-              <Link href="/dashboard" className="font-medium text-slate-600 hover:text-brand-700">
-                Organizers
+              <Link href="/signup" className="hidden text-ink-muted hover:text-ink sm:inline">
+                Sign up
+              </Link>
+              {/* /dashboard sends visitors who are not signed in to /login and brings them back afterwards. */}
+              <Link href="/dashboard" className="btn-primary min-h-10">
+                Log in
               </Link>
             </nav>
           </div>

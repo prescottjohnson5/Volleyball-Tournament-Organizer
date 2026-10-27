@@ -2,19 +2,19 @@ import type { MatchStatus } from "@/lib/supabase/database.types";
 import type { ViewMatch, ViewTeam } from "@/lib/view";
 
 const STATUS_STYLES: Record<MatchStatus, { label: string; className: string }> = {
-  in_progress: { label: "Live", className: "bg-red-100 text-red-700" },
-  completed: { label: "Final", className: "bg-slate-200 text-slate-700" },
-  ready: { label: "Up next", className: "bg-brand-100 text-brand-700" },
-  pending: { label: "Waiting", className: "bg-slate-100 text-slate-500" },
-  bye: { label: "Bye", className: "bg-slate-100 text-slate-500" },
-  not_needed: { label: "Not needed", className: "bg-slate-100 text-slate-500" },
+  in_progress: { label: "Live", className: "bg-red-500/20 text-red-200" },
+  completed: { label: "Final", className: "bg-steel/50 text-ink-muted" },
+  ready: { label: "Up next", className: "bg-teal/20 text-teal-300" },
+  pending: { label: "Waiting", className: "bg-white/5 text-ink-subtle" },
+  bye: { label: "Bye", className: "bg-white/5 text-ink-subtle" },
+  not_needed: { label: "Not needed", className: "bg-white/5 text-ink-subtle" },
 };
 
 export function StatusBadge({ status }: { status: MatchStatus }) {
   const style = STATUS_STYLES[status];
   return (
     <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${style.className}`}>
-      {status === "in_progress" && <span aria-hidden className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-600" />}
+      {status === "in_progress" && <span aria-hidden className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-400" />}
       {style.label}
     </span>
   );
@@ -60,9 +60,9 @@ export function MatchCard({
   const hasScores = match.sets.length > 0;
 
   return (
-    <article className={`card ${compact ? "p-3" : ""} ${match.status === "in_progress" ? "border-red-300" : ""}`} aria-label={match.label}>
+    <article className={`card ${compact ? "p-3" : ""} ${match.status === "in_progress" ? "border-red-400/70" : ""}`} aria-label={match.label}>
       <header className="mb-2 flex items-center justify-between gap-2">
-        <h3 className="text-xs font-semibold tracking-wide text-slate-500 uppercase">{match.label}</h3>
+        <h3 className="text-xs font-semibold tracking-wide text-ink-subtle uppercase">{match.label}</h3>
         <StatusBadge status={match.status} />
       </header>
       <table className="w-full text-sm">
@@ -74,15 +74,15 @@ export function MatchCard({
             const isWinner = decided && row.id !== null && row.id === match.winnerId;
             const isHighlighted = highlightTeamId !== undefined && row.id === highlightTeamId;
             return (
-              <tr key={row.side} className={isWinner ? "font-bold" : decided ? "text-slate-500" : ""}>
-                <th scope="row" className={`truncate py-1 pr-2 text-left font-[inherit] ${isHighlighted ? "text-brand-700" : ""}`}>
+              <tr key={row.side} className={isWinner ? "font-bold" : decided ? "text-ink-subtle" : ""}>
+                <th scope="row" className={`truncate py-1 pr-2 text-left font-[inherit] ${isHighlighted ? "text-teal-300" : ""}`}>
                   {teamLabel(row.id, match, teams)}
                 </th>
                 {match.sets.map((set) => {
                   const own = row.side === "a" ? set.a : set.b;
                   const other = row.side === "a" ? set.b : set.a;
                   return (
-                    <td key={set.setNumber} className={`w-8 text-center tabular-nums ${own > other ? "text-slate-900" : "text-slate-400"}`}>
+                    <td key={set.setNumber} className={`w-8 text-center tabular-nums ${own > other ? "text-ink" : "text-ink-faint"}`}>
                       {own}
                     </td>
                   );
@@ -94,12 +94,12 @@ export function MatchCard({
         </tbody>
       </table>
       {hasScores && (
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-ink-subtle">
           Sets {match.setsA}–{match.setsB}
         </p>
       )}
       {!compact && hasScores && (
-        <details className="mt-1 text-xs text-slate-500">
+        <details className="mt-1 text-xs text-ink-subtle">
           <summary className="cursor-pointer">Who reported</summary>
           <ul className="mt-1 space-y-0.5">
             {reporterText(match, teams).map((line) => (

@@ -22,7 +22,7 @@ export default async function CaptainPage({ params }: { params: Promise<{ token:
     return (
       <div className="card mx-auto max-w-lg space-y-2">
         <h1 className="text-xl font-bold">This captain link does not work</h1>
-        <p className="text-slate-700">
+        <p className="text-ink-muted">
           It may have been replaced by a newer link. Ask the tournament organizer to send you a new captain link.
         </p>
       </div>

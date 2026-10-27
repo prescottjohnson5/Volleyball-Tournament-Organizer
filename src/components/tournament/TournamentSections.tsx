@@ -13,17 +13,17 @@ export function TournamentHeader({ view, liveIndicator }: { view: TournamentView
     <header className="space-y-2">
       <div className="flex flex-wrap items-center gap-2">
         <h1 className="text-2xl font-bold">{t.name}</h1>
-        <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700">{STATUS_LABELS[t.status]}</span>
+        <span className="rounded-full bg-teal/20 px-2.5 py-0.5 text-xs font-semibold text-teal-300">{STATUS_LABELS[t.status]}</span>
         {liveIndicator}
       </div>
-      <p className="text-slate-600">
+      <p className="text-ink-muted">
         {formatEventDate(t.eventDate)} · {t.location}
       </p>
-      <p className="text-sm text-slate-600">
+      <p className="text-sm text-ink-muted">
         <span className="capitalize">{t.environment}</span> · {FORMAT_LABELS[t.format]} · {describeRuleset(rules)}
       </p>
       {champion && (
-        <p className="rounded-xl bg-accent-400/30 p-3 text-center text-lg font-bold" role="status">
+        <p className="rounded-xl bg-sun/15 text-sun p-3 text-center text-lg font-bold" role="status">
           🏆 Champion: {champion.name}
         </p>
       )}
@@ -36,7 +36,7 @@ export function TournamentSections({ view }: { view: TournamentView }) {
   const hasPools = view.teams.some((t) => t.pool);
   return (
     <div className="space-y-6">
-      <nav aria-label="Sections" className="sticky top-0 z-10 -mx-4 flex gap-2 overflow-x-auto bg-slate-50/95 px-4 py-2 backdrop-blur">
+      <nav aria-label="Sections" className="sticky top-0 z-10 -mx-4 flex gap-2 overflow-x-auto bg-midnight-900/95 px-4 py-2 backdrop-blur">
         <a href="#matches" className="btn-secondary min-h-9 py-1">
           Matches
         </a>

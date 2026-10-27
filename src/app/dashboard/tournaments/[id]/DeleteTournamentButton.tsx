@@ -28,7 +28,7 @@ export function DeleteTournamentButton({ tournamentId }: { tournamentId: string 
     <div className="space-y-2">
       {confirming ? (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm text-slate-700">Delete this tournament permanently?</span>
+          <span className="text-sm text-ink-muted">Delete this tournament permanently?</span>
           <button type="button" className="btn-danger" onClick={onDelete} disabled={busy}>
             {busy ? "Deleting…" : "Yes, delete"}
           </button>
@@ -37,12 +37,12 @@ export function DeleteTournamentButton({ tournamentId }: { tournamentId: string 
           </button>
         </div>
       ) : (
-        <button type="button" className="btn-secondary text-red-700" onClick={() => setConfirming(true)}>
+        <button type="button" className="btn-secondary text-red-300" onClick={() => setConfirming(true)}>
           Delete tournament
         </button>
       )}
       {error && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-sm text-red-300">
           {error}
         </p>
       )}

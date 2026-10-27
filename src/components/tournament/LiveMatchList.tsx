@@ -9,15 +9,15 @@ export function LiveMatchList({ view }: { view: TournamentView }) {
   const results = view.matches.filter((m) => m.status === "completed").sort((a, b) => b.orderIndex - a.orderIndex);
 
   if (view.matches.length === 0) {
-    return <p className="card text-sm text-slate-600">Matches appear here when the organizer starts the tournament.</p>;
+    return <p className="card text-sm text-ink-muted">Matches appear here when the organizer starts the tournament.</p>;
   }
 
   return (
     <div className="space-y-5">
       <div>
-        <h3 className="mb-2 text-sm font-semibold text-slate-700">Live now ({live.length})</h3>
+        <h3 className="mb-2 text-sm font-semibold text-ink-muted">Live now ({live.length})</h3>
         {live.length === 0 ? (
-          <p className="text-sm text-slate-500">No sets in progress.</p>
+          <p className="text-sm text-ink-subtle">No sets in progress.</p>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
             {live.map((m) => (
@@ -28,7 +28,7 @@ export function LiveMatchList({ view }: { view: TournamentView }) {
       </div>
       {upNext.length > 0 && (
         <div>
-          <h3 className="mb-2 text-sm font-semibold text-slate-700">Up next ({upNext.length})</h3>
+          <h3 className="mb-2 text-sm font-semibold text-ink-muted">Up next ({upNext.length})</h3>
           <div className="grid gap-3 sm:grid-cols-2">
             {upNext.map((m) => (
               <MatchCard key={m.id} match={m} teams={teams} compact />
@@ -38,7 +38,7 @@ export function LiveMatchList({ view }: { view: TournamentView }) {
       )}
       {results.length > 0 && (
         <div>
-          <h3 className="mb-2 text-sm font-semibold text-slate-700">Results ({results.length})</h3>
+          <h3 className="mb-2 text-sm font-semibold text-ink-muted">Results ({results.length})</h3>
           <div className="grid gap-3 sm:grid-cols-2">
             {results.slice(0, 6).map((m) => (
               <MatchCard key={m.id} match={m} teams={teams} />
@@ -46,7 +46,7 @@ export function LiveMatchList({ view }: { view: TournamentView }) {
           </div>
           {results.length > 6 && (
             <details className="mt-3">
-              <summary className="cursor-pointer text-sm font-medium text-brand-700">Show {results.length - 6} earlier results</summary>
+              <summary className="cursor-pointer text-sm font-medium text-teal-300">Show {results.length - 6} earlier results</summary>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 {results.slice(6).map((m) => (
                   <MatchCard key={m.id} match={m} teams={teams} />

@@ -22,17 +22,17 @@ export function CaptainPanel({ initialView, teamId, token }: { initialView: Tour
   return (
     <div className="space-y-6">
       <header className="space-y-1">
-        <p className="text-sm font-medium text-brand-700">Captain page · keep this link private</p>
+        <p className="text-sm font-medium text-teal-300">Captain page · keep this link private</p>
         <h1 className="text-2xl font-bold">{team?.name ?? "Your team"}</h1>
-        <p className="text-slate-600">{view.tournament.name}</p>
+        <p className="text-ink-muted">{view.tournament.name}</p>
         <LiveIndicator status={status} />
       </header>
 
       {view.tournament.status === "registration" && (
-        <p className="card text-slate-700">The tournament has not started yet. Your matches appear here when the organizer starts it.</p>
+        <p className="card text-ink-muted">The tournament has not started yet. Your matches appear here when the organizer starts it.</p>
       )}
       {champion && (
-        <p className="card bg-accent-400/30 text-center font-semibold">
+        <p className="card border-sun/40 bg-sun/15 text-sun text-center font-semibold">
           {champion === teamId ? "🏆 Your team won the tournament!" : `🏆 Champion: ${teams.get(champion)?.name}`}
         </p>
       )}
@@ -41,7 +41,7 @@ export function CaptainPanel({ initialView, teamId, token }: { initialView: Tour
         <section className="space-y-3">
           <h2 className="text-lg font-semibold">Report scores</h2>
           {playable.length === 0 ? (
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-ink-muted">
               {waiting.length > 0 ? "Your next match is waiting for other results." : "No match to report right now."}
             </p>
           ) : (
@@ -51,7 +51,7 @@ export function CaptainPanel({ initialView, teamId, token }: { initialView: Tour
               </MatchCard>
             ))
           )}
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-ink-subtle">
             Report each set when it ends. If a score is wrong, ask the organizer to correct it.
           </p>
         </section>

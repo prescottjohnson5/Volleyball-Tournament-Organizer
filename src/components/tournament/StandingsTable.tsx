@@ -23,7 +23,7 @@ export function StandingsTable({ view }: { view: TournamentView }) {
           <div key={pool} className="card overflow-x-auto p-0">
             <table className="w-full text-sm">
               <caption className="px-4 pt-3 text-left font-semibold">Pool {pool}</caption>
-              <thead className="text-xs text-slate-500">
+              <thead className="text-xs text-ink-subtle">
                 <tr>
                   <th scope="col" className="px-2 py-2 text-left">
                     #
@@ -44,8 +44,8 @@ export function StandingsTable({ view }: { view: TournamentView }) {
               </thead>
               <tbody>
                 {rows.map((row) => (
-                  <tr key={row.teamId} className="border-t border-slate-100">
-                    <td className="px-2 py-2 text-slate-500">{row.rank}</td>
+                  <tr key={row.teamId} className="border-t border-line">
+                    <td className="px-2 py-2 text-ink-subtle">{row.rank}</td>
                     <td className="py-2 font-medium">{names.get(row.teamId)}</td>
                     <td className="px-2 py-2 text-center tabular-nums">
                       {row.wins}–{row.losses}
@@ -59,7 +59,7 @@ export function StandingsTable({ view }: { view: TournamentView }) {
           </div>
         );
       })}
-      <p className="text-xs text-slate-500 md:col-span-2">
+      <p className="text-xs text-ink-subtle md:col-span-2">
         Ranked by matches won, then set difference, point difference, head-to-head (two-way ties) and seed.
       </p>
     </div>

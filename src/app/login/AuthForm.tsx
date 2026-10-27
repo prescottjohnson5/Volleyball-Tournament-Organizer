@@ -76,33 +76,33 @@ export function AuthForm({ mode, next }: { mode: Mode; next?: string }) {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        {!isLogin && <p className="mt-1 text-xs text-slate-500">At least 8 characters.</p>}
+        {!isLogin && <p className="mt-1 text-xs text-ink-subtle">At least 8 characters.</p>}
       </div>
       {error && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-sm text-red-300">
           {error}
         </p>
       )}
       {message && (
-        <p role="status" className="text-sm text-green-700">
+        <p role="status" className="text-sm text-emerald-300">
           {message}
         </p>
       )}
       <button type="submit" className="btn-primary w-full" disabled={busy}>
         {busy ? "Please wait…" : isLogin ? "Sign in" : "Create account"}
       </button>
-      <p className="text-center text-sm text-slate-600">
+      <p className="text-center text-sm text-ink-muted">
         {isLogin ? (
           <>
             New organizer?{" "}
-            <Link href="/signup" className="font-medium text-brand-700 underline">
+            <Link href="/signup" className="link">
               Create an account
             </Link>
           </>
         ) : (
           <>
             Already have an account?{" "}
-            <Link href="/login" className="font-medium text-brand-700 underline">
+            <Link href="/login" className="link">
               Sign in
             </Link>
           </>

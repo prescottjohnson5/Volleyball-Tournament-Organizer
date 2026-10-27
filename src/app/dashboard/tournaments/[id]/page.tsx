@@ -36,28 +36,28 @@ export default async function TournamentDashboardPage({ params }: { params: Prom
 
   return (
     <>
-      <Link href="/dashboard" className="text-sm text-brand-700 underline">
+      <Link href="/dashboard" className="text-sm link">
         ← All tournaments
       </Link>
 
       <section className="space-y-1">
         <div className="flex flex-wrap items-center gap-2">
           <h1 className="text-2xl font-bold">{tournament.name}</h1>
-          <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700">
+          <span className="rounded-full bg-teal/20 px-2.5 py-0.5 text-xs font-semibold text-teal-300">
             {STATUS_LABELS[tournament.status]}
           </span>
         </div>
-        <p className="text-slate-600">
+        <p className="text-ink-muted">
           {formatEventDate(tournament.event_date)} · {tournament.location} · <span className="capitalize">{tournament.environment}</span>
         </p>
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-ink-muted">
           {FORMAT_LABELS[tournament.format]} · best of {tournament.best_of}
           {paidRegistration && <> · {formatCents(tournament.registration_fee_cents, tournament.currency)} per team</>}
         </p>
       </section>
 
       {tournament.status === "registration" && paidRegistration && payouts.available && payouts.status !== "ready" && (
-        <p className="card border-amber-300 bg-amber-50 text-sm text-amber-900">
+        <p className="notice text-sm">
           Captains cannot pay yet: <Link href="/dashboard" className="font-semibold underline">set up payouts</Link> first so
           registration fees can go to your Stripe account.
         </p>
@@ -71,21 +71,21 @@ export default async function TournamentDashboardPage({ params }: { params: Prom
 
       <section className="card space-y-3">
         <h2 className="text-lg font-semibold">
-          Teams <span className="text-slate-500">({paidTeams.length}/{tournament.max_teams} {paidRegistration ? "paid" : "registered"})</span>
+          Teams <span className="text-ink-subtle">({paidTeams.length}/{tournament.max_teams} {paidRegistration ? "paid" : "registered"})</span>
         </h2>
         {paidTeams.length === 0 ? (
-          <p className="text-sm text-slate-600">{paidRegistration ? "No paid teams yet." : "No teams registered yet."}</p>
+          <p className="text-sm text-ink-muted">{paidRegistration ? "No paid teams yet." : "No teams registered yet."}</p>
         ) : (
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-line">
             {paidTeams.map((team) => (
               <li key={team.id} className="py-2">
                 <p className="font-medium">
-                  {team.seed !== null && <span className="mr-1 text-slate-400">#{team.seed}</span>}
+                  {team.seed !== null && <span className="mr-1 text-ink-faint">#{team.seed}</span>}
                   {team.name}
-                  {team.pool && <span className="ml-2 text-xs text-slate-500">Pool {team.pool}</span>}
+                  {team.pool && <span className="ml-2 text-xs text-ink-subtle">Pool {team.pool}</span>}
                 </p>
                 {team.captain && (
-                  <p className="text-sm text-slate-600">
+                  <p className="text-sm text-ink-muted">
                     {team.captain.captain_name} · {team.captain.captain_email}
                   </p>
                 )}
@@ -96,10 +96,10 @@ export default async function TournamentDashboardPage({ params }: { params: Prom
         )}
         {otherTeams.length > 0 && (
           <details className="text-sm">
-            <summary className="cursor-pointer text-slate-600">{otherTeams.length} unpaid or cancelled checkouts</summary>
+            <summary className="cursor-pointer text-ink-muted">{otherTeams.length} unpaid or cancelled checkouts</summary>
             <ul className="mt-2 space-y-1">
               {otherTeams.map((team) => (
-                <li key={team.id} className="text-slate-600">
+                <li key={team.id} className="text-ink-muted">
                   {team.name} — {PAYMENT_LABELS[team.payment_status]}
                 </li>
               ))}

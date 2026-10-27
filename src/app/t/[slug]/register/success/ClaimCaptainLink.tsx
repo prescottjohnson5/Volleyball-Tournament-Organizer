@@ -95,7 +95,7 @@ export function ClaimCaptainLink({ sessionId, slug }: { sessionId: string; slug:
     return (
       <div className="card space-y-2 text-center" role="status">
         <p className="text-lg font-semibold">Confirming your payment…</p>
-        <p className="text-sm text-slate-600">This usually takes a few seconds. Please keep this page open.</p>
+        <p className="text-sm text-ink-muted">This usually takes a few seconds. Please keep this page open.</p>
       </div>
     );
   }
@@ -111,7 +111,7 @@ export function ClaimCaptainLink({ sessionId, slug }: { sessionId: string; slug:
   };
   return (
     <div className="card space-y-3">
-      <p className="text-slate-800">{messages[state.kind]}</p>
+      <p className="text-ink">{messages[state.kind]}</p>
       <Link href={`/t/${slug}`} className="btn-secondary">
         Go to the tournament page
       </Link>

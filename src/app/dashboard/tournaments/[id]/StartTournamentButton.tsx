@@ -36,13 +36,13 @@ export function StartTournamentButton({
   }
 
   return (
-    <div className="card space-y-2 border-brand-100 bg-brand-50">
+    <div className="card space-y-2 border-teal/60 bg-teal/10">
       <h2 className="font-semibold">Start the tournament</h2>
-      <p className="text-sm text-slate-700">
+      <p className="text-sm text-ink-muted">
         Starting closes registration, seeds the {paidTeams} {teams} {inOrder} and generates the schedule. This
         cannot be undone.
       </p>
-      {!enough && <p className="text-sm text-amber-800">At least {minTeams} {teams} are needed.</p>}
+      {!enough && <p className="text-sm text-sun-100">At least {minTeams} {teams} are needed.</p>}
       {confirming ? (
         <div className="flex flex-wrap gap-2">
           <button type="button" className="btn-primary" onClick={start} disabled={busy}>
@@ -58,7 +58,7 @@ export function StartTournamentButton({
         </button>
       )}
       {error && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-sm text-red-300">
           {error}
         </p>
       )}
