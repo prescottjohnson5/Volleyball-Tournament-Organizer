@@ -13,5 +13,9 @@ export default defineConfig({
     environment: "node",
     include: ["src/**/*.test.ts"],
     env: { STRIPE_SUPPRESS_NOTICES: "true" },
+    // The PGlite database tests play whole tournaments through SQL. Under parallel load (and on
+    // small CI runners) they can exceed the 5s default, which is a timing failure, not a bug.
+    testTimeout: 30_000,
+    hookTimeout: 30_000,
   },
 });
