@@ -7,11 +7,13 @@ import { ENVIRONMENT_PRESETS } from "@/lib/rules/ruleset";
 import type { TournamentInput } from "@/lib/tournaments/schema";
 import { FORMAT_LABELS } from "@/lib/tournaments/labels";
 
-type Props =
+// showFee is false when payments are off: the fee field is hidden and no fee is sent.
+type Props = { showFee: boolean } & (
   | { mode: "create"; initial?: undefined; tournamentId?: undefined }
-  | { mode: "edit"; initial: TournamentInput; tournamentId: string };
+  | { mode: "edit"; initial: TournamentInput; tournamentId: string }
+);
 
-export function TournamentForm({ mode, initial, tournamentId }: Props) {
+export function TournamentForm({ mode, initial, tournamentId, showFee }: Props) {
   const router = useRouter();
   const [name, setName] = useState(initial?.name ?? "");
   const [eventDate, setEventDate] = useState(initial?.eventDate ?? "");
@@ -20,7 +22,7 @@ export function TournamentForm({ mode, initial, tournamentId }: Props) {
   const [format, setFormat] = useState<TournamentInput["format"]>(initial?.format ?? "pool_to_single_elim");
   const [bestOf, setBestOf] = useState<TournamentInput["bestOf"]>(initial?.bestOf ?? 3);
   const [maxTeams, setMaxTeams] = useState(String(initial?.maxTeams ?? 8));
-  const [fee, setFee] = useState(initial ? (initial.registrationFeeCents / 100).toFixed(2) : "25.00");
+  const [fee, setFee] = useState(initial?.registrationFeeCents ? (initial.registrationFeeCents / 100).toFixed(2) : "25.00");
   const [poolSize, setPoolSize] = useState(initial?.poolOptions?.poolSize ?? 4);
   const [advancePerPool, setAdvancePerPool] = useState(initial?.poolOptions?.advancePerPool ?? 2);
   const [busy, setBusy] = useState(false);
@@ -29,7 +31,7 @@ export function TournamentForm({ mode, initial, tournamentId }: Props) {
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
-    const registrationFeeCents = parseDollarsToCents(fee);
+    const registrationFeeCents = showFee ? parseDollarsToCents(fee) : undefined;
     if (registrationFeeCents === null) {
       setError("Enter the fee as a dollar amount, for example 25 or 25.00.");
       return;
@@ -169,12 +171,14 @@ export function TournamentForm({ mode, initial, tournamentId }: Props) {
           </label>
           <input id="maxTeams" type="number" inputMode="numeric" min={3} max={64} required className="input" value={maxTeams} onChange={(e) => setMaxTeams(e.target.value)} />
         </div>
-        <div>
-          <label htmlFor="fee" className="label">
-            Registration fee per team (USD)
-          </label>
-          <input id="fee" inputMode="decimal" required className="input" value={fee} onChange={(e) => setFee(e.target.value)} />
-        </div>
+        {showFee && (
+          <div>
+            <label htmlFor="fee" className="label">
+              Registration fee per team (USD)
+            </label>
+            <input id="fee" inputMode="decimal" required className="input" value={fee} onChange={(e) => setFee(e.target.value)} />
+          </div>
+        )}
       </div>
 
       {error && (

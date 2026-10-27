@@ -2,7 +2,9 @@ import Link from "next/link";
 import { SetupNotice } from "@/components/SetupNotice";
 import { requireOrganizer } from "@/lib/auth";
 import { listOrganizerTournaments } from "@/lib/data/dashboard";
+import { isPaymentsEnabled } from "@/lib/env";
 import { formatCents } from "@/lib/money";
+import { collectsFees } from "@/lib/payments";
 import { getPayoutState } from "@/lib/stripe/payout-state";
 import { FORMAT_LABELS, formatEventDate, STATUS_LABELS } from "@/lib/tournaments/labels";
 import { ConnectPanel } from "./ConnectPanel";
@@ -11,13 +13,13 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const organizer = await requireOrganizer();
   const [tournaments, payouts, { connect }] = await Promise.all([
     listOrganizerTournaments(organizer.id),
-    getPayoutState(organizer.id),
+    isPaymentsEnabled() ? getPayoutState(organizer.id) : null,
     searchParams,
   ]);
 
   return (
     <>
-      {payouts.available ? (
+      {!payouts ? null : payouts.available ? (
         <ConnectPanel
           status={payouts.status}
           feePercent={payouts.feePercent}
@@ -69,8 +71,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                   {formatEventDate(t.event_date)} · {t.location}
                 </p>
                 <p className="mt-2 text-sm text-slate-700">
-                  {FORMAT_LABELS[t.format]} · {t.paidTeams}/{t.max_teams} teams paid ·{" "}
-                  {formatCents(t.registration_fee_cents, t.currency)}
+                  {FORMAT_LABELS[t.format]} · {t.paidTeams}/{t.max_teams} teams {collectsFees(t) ? "paid" : "registered"}
+                  {collectsFees(t) && <> · {formatCents(t.registration_fee_cents, t.currency)}</>}
                 </p>
               </Link>
             </li>

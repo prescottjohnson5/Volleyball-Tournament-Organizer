@@ -3,7 +3,18 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export function StartTournamentButton({ tournamentId, paidTeams, minTeams }: { tournamentId: string; paidTeams: number; minTeams: number }) {
+export function StartTournamentButton({
+  tournamentId,
+  paidTeams,
+  minTeams,
+  paidRegistration,
+}: {
+  tournamentId: string;
+  paidTeams: number;
+  minTeams: number;
+  paidRegistration: boolean;
+}) {
+  const [teams, inOrder] = paidRegistration ? ["paid teams", "in the order they paid"] : ["registered teams", "in the order they registered"];
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -28,10 +39,10 @@ export function StartTournamentButton({ tournamentId, paidTeams, minTeams }: { t
     <div className="card space-y-2 border-brand-100 bg-brand-50">
       <h2 className="font-semibold">Start the tournament</h2>
       <p className="text-sm text-slate-700">
-        Starting closes registration, seeds the {paidTeams} paid teams in the order they paid and generates the schedule. This
+        Starting closes registration, seeds the {paidTeams} {teams} {inOrder} and generates the schedule. This
         cannot be undone.
       </p>
-      {!enough && <p className="text-sm text-amber-800">At least {minTeams} paid teams are needed.</p>}
+      {!enough && <p className="text-sm text-amber-800">At least {minTeams} {teams} are needed.</p>}
       {confirming ? (
         <div className="flex flex-wrap gap-2">
           <button type="button" className="btn-primary" onClick={start} disabled={busy}>

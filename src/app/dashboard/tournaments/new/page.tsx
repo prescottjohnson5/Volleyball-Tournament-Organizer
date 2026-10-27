@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireOrganizer } from "@/lib/auth";
+import { isPaymentsEnabled } from "@/lib/env";
 import { TournamentForm } from "../TournamentForm";
 
 export default async function NewTournamentPage() {
@@ -10,7 +11,7 @@ export default async function NewTournamentPage() {
         ← All tournaments
       </Link>
       <h1 className="text-2xl font-bold">New tournament</h1>
-      <TournamentForm mode="create" />
+      <TournamentForm mode="create" showFee={isPaymentsEnabled()} />
     </>
   );
 }

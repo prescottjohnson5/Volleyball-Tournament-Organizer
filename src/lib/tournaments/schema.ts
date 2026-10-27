@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { UserFacingError } from "@/lib/errors";
 import { poolOptionsSchema } from "@/lib/formats/pool-play";
 import type { Json, TournamentRow } from "@/lib/supabase/database.types";
 
@@ -23,13 +24,25 @@ export const tournamentInputSchema = z.object({
     .number()
     .int()
     .min(100, "The registration fee must be at least $1.00")
-    .max(1_000_000, "The registration fee must be at most $10,000"),
+    .max(1_000_000, "The registration fee must be at most $10,000")
+    .optional(),
   poolOptions: poolOptionsSchema.optional(),
 });
 
 export type TournamentInput = z.infer<typeof tournamentInputSchema>;
 
-/** Maps validated input to database columns (shared by create and update). */
+/**
+ * Validates organizer input. The fee is only kept when fees are collected (payments on); otherwise
+ * it is dropped, so a new tournament is free and an edit leaves the stored fee alone.
+ */
+export function parseTournamentInput(raw: unknown, { withFee }: { withFee: boolean }): TournamentInput {
+  const input = tournamentInputSchema.parse(raw);
+  if (!withFee) return { ...input, registrationFeeCents: undefined };
+  if (input.registrationFeeCents === undefined) throw new UserFacingError("Enter a registration fee.", 400);
+  return input;
+}
+
+/** Maps validated input to database columns (shared by create and update). A missing fee is not written. */
 export function toTournamentColumns(input: TournamentInput) {
   const formatOptions: Json =
     input.format === "pool_to_single_elim" ? poolOptionsSchema.parse(input.poolOptions ?? {}) : {};
@@ -42,7 +55,7 @@ export function toTournamentColumns(input: TournamentInput) {
     format_options: formatOptions,
     best_of: input.bestOf,
     max_teams: input.maxTeams,
-    registration_fee_cents: input.registrationFeeCents,
+    ...(input.registrationFeeCents === undefined ? {} : { registration_fee_cents: input.registrationFeeCents }),
   } satisfies Partial<TournamentRow>;
 }
 

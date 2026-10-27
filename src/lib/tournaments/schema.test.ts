@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { toTournamentColumns, tournamentInputSchema, type TournamentInput } from "./schema";
+import { parseTournamentInput, toTournamentColumns, tournamentInputSchema, type TournamentInput } from "./schema";
 
 const valid: TournamentInput = {
   name: "Summer Slam",
@@ -43,5 +43,19 @@ describe("toTournamentColumns", () => {
       poolSize: 4,
       advancePerPool: 2,
     });
+  });
+});
+
+describe("parseTournamentInput", () => {
+  it("requires a fee of at least $1 when fees are collected", () => {
+    expect(parseTournamentInput(valid, { withFee: true }).registrationFeeCents).toBe(4000);
+    expect(() => parseTournamentInput({ ...valid, registrationFeeCents: undefined }, { withFee: true })).toThrow(/registration fee/);
+  });
+
+  it("drops the fee when payments are off, so it is never written", () => {
+    const input = parseTournamentInput(valid, { withFee: false });
+    expect(input.registrationFeeCents).toBeUndefined();
+    expect(toTournamentColumns(input)).not.toHaveProperty("registration_fee_cents");
+    expect(parseTournamentInput({ ...valid, registrationFeeCents: undefined }, { withFee: false }).name).toBe("Summer Slam");
   });
 });

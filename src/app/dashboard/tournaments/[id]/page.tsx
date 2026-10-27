@@ -3,7 +3,9 @@ import { notFound } from "next/navigation";
 import { z } from "zod";
 import { requireOrganizer } from "@/lib/auth";
 import { getOrganizerTournament } from "@/lib/data/dashboard";
+import { isPaymentsEnabled } from "@/lib/env";
 import { formatCents } from "@/lib/money";
+import { collectsFees } from "@/lib/payments";
 import { FORMAT_LABELS, formatEventDate, PAYMENT_LABELS, STATUS_LABELS } from "@/lib/tournaments/labels";
 import { toTournamentInput } from "@/lib/tournaments/schema";
 import { getFormat } from "@/lib/formats";
@@ -25,7 +27,9 @@ export default async function TournamentDashboardPage({ params }: { params: Prom
   const result = await getOrganizerTournament(id, organizer.id);
   if (!result) notFound();
   const { tournament, teams } = result;
-  const payouts = await getPayoutState(organizer.id);
+  const paidRegistration = collectsFees(tournament);
+  // Only look up payout status for paid registration (it may call Stripe).
+  const payouts = paidRegistration ? await getPayoutState(organizer.id) : { available: false as const };
   const paidTeams = teams.filter((t) => t.payment_status === "paid");
   const otherTeams = teams.filter((t) => t.payment_status !== "paid");
 
@@ -46,11 +50,12 @@ export default async function TournamentDashboardPage({ params }: { params: Prom
           {formatEventDate(tournament.event_date)} · {tournament.location} · <span className="capitalize">{tournament.environment}</span>
         </p>
         <p className="text-sm text-slate-600">
-          {FORMAT_LABELS[tournament.format]} · best of {tournament.best_of} · {formatCents(tournament.registration_fee_cents, tournament.currency)} per team
+          {FORMAT_LABELS[tournament.format]} · best of {tournament.best_of}
+          {paidRegistration && <> · {formatCents(tournament.registration_fee_cents, tournament.currency)} per team</>}
         </p>
       </section>
 
-      {tournament.status === "registration" && payouts.available && payouts.status !== "ready" && (
+      {tournament.status === "registration" && paidRegistration && payouts.available && payouts.status !== "ready" && (
         <p className="card border-amber-300 bg-amber-50 text-sm text-amber-900">
           Captains cannot pay yet: <Link href="/dashboard" className="font-semibold underline">set up payouts</Link> first so
           registration fees can go to your Stripe account.
@@ -65,10 +70,10 @@ export default async function TournamentDashboardPage({ params }: { params: Prom
 
       <section className="card space-y-3">
         <h2 className="text-lg font-semibold">
-          Teams <span className="text-slate-500">({paidTeams.length}/{tournament.max_teams} paid)</span>
+          Teams <span className="text-slate-500">({paidTeams.length}/{tournament.max_teams} {paidRegistration ? "paid" : "registered"})</span>
         </h2>
         {paidTeams.length === 0 ? (
-          <p className="text-sm text-slate-600">No paid teams yet.</p>
+          <p className="text-sm text-slate-600">{paidRegistration ? "No paid teams yet." : "No teams registered yet."}</p>
         ) : (
           <ul className="divide-y divide-slate-100">
             {paidTeams.map((team) => (
@@ -103,13 +108,13 @@ export default async function TournamentDashboardPage({ params }: { params: Prom
       </section>
 
       {tournament.status === "registration" && (
-        <StartTournamentButton tournamentId={tournament.id} paidTeams={paidTeams.length} minTeams={getFormat(tournament.format).minTeams} />
+        <StartTournamentButton tournamentId={tournament.id} paidTeams={paidTeams.length} paidRegistration={paidRegistration} minTeams={getFormat(tournament.format).minTeams} />
       )}
 
       {tournament.status === "registration" && (
         <section className="space-y-3">
           <h2 className="text-lg font-semibold">Edit details</h2>
-          <TournamentForm mode="edit" tournamentId={tournament.id} initial={toTournamentInput(tournament)} />
+          <TournamentForm mode="edit" showFee={isPaymentsEnabled()} tournamentId={tournament.id} initial={toTournamentInput(tournament)} />
           <DeleteTournamentButton tournamentId={tournament.id} />
         </section>
       )}
