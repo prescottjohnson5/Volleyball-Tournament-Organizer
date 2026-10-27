@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BackLink } from "@/components/BackLink";
 import { requireOrganizer } from "@/lib/auth";
 import { listOrganizerTournaments } from "@/lib/data/dashboard";
 import { isPaymentsEnabled } from "@/lib/env";
@@ -9,13 +9,14 @@ export default async function NewTournamentPage() {
   const organizer = await requireOrganizer("/dashboard/tournaments/new");
   const sandboxFull = organizer.isSandbox && (await listOrganizerTournaments(organizer.id)).length >= SANDBOX_MAX_TOURNAMENTS;
   return (
-    <>
-      <Link href="/dashboard" className="text-sm link">
-        ← All tournaments
-      </Link>
-      <h1 className="text-2xl font-bold">New tournament</h1>
+    <div className="mx-auto max-w-2xl space-y-6">
+      <BackLink href="/">Home</BackLink>
+      <div className="space-y-1">
+        <h1 className="text-3xl font-extrabold sm:text-4xl">Create a tournament</h1>
+        <p className="text-ink-muted">You can change everything until the tournament starts.</p>
+      </div>
       {sandboxFull ? (
-        <p className="card text-ink-muted">{SANDBOX_ONE_TOURNAMENT_MESSAGE}</p>
+        <p className="empty-state">{SANDBOX_ONE_TOURNAMENT_MESSAGE}</p>
       ) : (
         <TournamentForm
           mode="create"
@@ -23,6 +24,6 @@ export default async function NewTournamentPage() {
           maxTeamsLimit={organizer.isSandbox ? SANDBOX_MAX_TEAMS : undefined}
         />
       )}
-    </>
+    </div>
   );
 }
