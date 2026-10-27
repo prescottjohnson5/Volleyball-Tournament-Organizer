@@ -95,6 +95,54 @@ What each file does:
 
 ---
 
-## Part C — Stripe (registration payments)
+## Part C — Stripe test mode (registration payments)
 
-_Added when payments are built (Phase 3)._
+Everything here uses Stripe **test mode**: no real money moves, and the app refuses live keys.
+
+### C1. Get your test secret key
+1. Create a free account at https://dashboard.stripe.com/register (no business details are needed
+   for test mode).
+2. Make sure the dashboard is in **test mode** (the "Test mode" / sandbox toggle at the top).
+3. Open **Developers** → **API keys**. Click **Reveal test key** next to **Secret key** (it starts
+   with `sk_test_`) and paste it into `.env.local` as `STRIPE_SECRET_KEY`.
+
+### C2. Install the Stripe CLI on Windows (to receive webhooks locally)
+Stripe tells the app "this payment succeeded" by calling a webhook. Your laptop is not reachable from
+the internet, so the Stripe CLI forwards those calls to it.
+1. Open https://github.com/stripe/stripe-cli/releases/latest and download the file ending in
+   `windows_x86_64.zip`.
+2. Right-click the zip → **Extract All…** → extract to `C:\stripe-cli`.
+3. Open a **new** PowerShell window and run:
+   ```powershell
+   cd C:\stripe-cli
+   .\stripe.exe login
+   ```
+   A browser tab opens; click **Allow access**.
+
+### C3. Forward webhooks and copy the signing secret
+1. In the same PowerShell window (keep it open while you test), run:
+   ```powershell
+   .\stripe.exe listen --forward-to localhost:3000/api/stripe/webhook
+   ```
+2. It prints `Ready! Your webhook signing secret is whsec_...`. Copy that value into `.env.local`
+   as `STRIPE_WEBHOOK_SECRET`. The secret stays the same each time you run `stripe listen` on this
+   computer.
+3. Restart `npm run dev` in your other PowerShell window so it reads the new values.
+
+### C4. Make a test registration
+1. Sign in at http://localhost:3000/dashboard, open a tournament and click **Copy link** under
+   *Registration link* (or scan the QR code with your phone if your phone can reach your computer).
+2. Fill in a team name, your name and an email, then click **Pay … and register**.
+3. On the Stripe page, pay with the test card `4242 4242 4242 4242`, any future expiry date (for
+   example `12/34`), any 3-digit CVC and any postal code.
+4. You return to the success page. Within a few seconds it shows **…is registered!** and your
+   private captain link. In the `stripe listen` window you will see `checkout.session.completed`
+   with a `[200]` response.
+5. Refresh the organizer dashboard: the team is listed as paid.
+
+**If the success page keeps saying "Confirming your payment…":** the webhook is not reaching the
+app. Check that `stripe listen` is still running, that `STRIPE_WEBHOOK_SECRET` matches what it
+printed, and that you restarted `npm run dev`.
+
+Useful test cards: `4000 0000 0000 9995` (declined, insufficient funds),
+`4000 0025 0000 3155` (asks for 3-D Secure authentication).
