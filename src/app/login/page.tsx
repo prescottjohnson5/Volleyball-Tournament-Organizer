@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SandboxHint } from "@/components/SandboxHint";
 import { SetupNotice } from "@/components/SetupNotice";
 import { missingEnv } from "@/lib/env";
 import { AuthForm } from "./AuthForm";
@@ -19,6 +20,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         </p>
       )}
       <AuthForm mode="login" next={next} />
+      <SandboxHint />
     </div>
   );
 }

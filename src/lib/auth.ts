@@ -2,7 +2,8 @@ import "server-only";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export type Organizer = { id: string; email: string | null };
+/** isSandbox: signed in through "Try it" (a Supabase anonymous sign-in); their data is deleted daily. */
+export type Organizer = { id: string; email: string | null; isSandbox: boolean };
 
 /** The signed-in organizer, verified against Supabase Auth, or null. */
 export async function getOrganizer(): Promise<Organizer | null> {
@@ -10,7 +11,7 @@ export async function getOrganizer(): Promise<Organizer | null> {
   const { data, error } = await supabase.auth.getClaims();
   if (error || !data?.claims?.sub) return null;
   const email = typeof data.claims.email === "string" ? data.claims.email : null;
-  return { id: data.claims.sub, email };
+  return { id: data.claims.sub, email, isSandbox: data.claims.is_anonymous === true };
 }
 
 /** For pages: redirects to /login when nobody is signed in. */
