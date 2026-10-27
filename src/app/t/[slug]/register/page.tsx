@@ -5,6 +5,7 @@ import { SetupNotice } from "@/components/SetupNotice";
 import { countPublicPaidTeams, getPublicTournament } from "@/lib/data/public";
 import { missingEnv } from "@/lib/env";
 import { formatCents } from "@/lib/money";
+import { collectsFees } from "@/lib/payments";
 import { createRuleset, describeRuleset, type BestOf } from "@/lib/rules/ruleset";
 import { getPayoutAccount } from "@/lib/stripe/connect";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -28,13 +29,14 @@ export default async function RegisterPage({
   const { cancelled } = await searchParams;
   const tournament = await getPublicTournament(slug);
   if (!tournament) notFound();
-  const paid = await countPublicPaidTeams(tournament.id);
-  const spotsLeft = Math.max(0, tournament.max_teams - paid);
-  const fee = formatCents(tournament.registration_fee_cents, tournament.currency);
+  const registered = await countPublicPaidTeams(tournament.id);
+  const spotsLeft = Math.max(0, tournament.max_teams - registered);
+  const fee = collectsFees(tournament) ? formatCents(tournament.registration_fee_cents, tournament.currency) : null;
   const rules = createRuleset(tournament.environment, { bestOf: tournament.best_of as BestOf });
   const open = tournament.status === "registration" && spotsLeft > 0;
-  // Payments go to the organizer's Stripe account, so registration waits until it is ready.
+  // Payments go to the organizer's Stripe account, so paid registration waits until it is ready.
   const paymentsReady =
+    !fee ||
     missingEnv(["SUPABASE_SERVICE_ROLE_KEY"]).length > 0 ||
     (await getPayoutAccount(createSupabaseAdminClient(), tournament.organizer_id)) !== null;
 
@@ -51,11 +53,13 @@ export default async function RegisterPage({
         </p>
       </header>
 
-      <div className="grid grid-cols-2 gap-3 text-center">
-        <div className="card">
-          <p className="text-2xl font-bold">{fee}</p>
-          <p className="text-xs text-slate-500">per team</p>
-        </div>
+      <div className={`grid gap-3 text-center ${fee ? "grid-cols-2" : "grid-cols-1"}`}>
+        {fee && (
+          <div className="card">
+            <p className="text-2xl font-bold">{fee}</p>
+            <p className="text-xs text-slate-500">per team</p>
+          </div>
+        )}
         <div className="card">
           <p className="text-2xl font-bold">{spotsLeft}</p>
           <p className="text-xs text-slate-500">of {tournament.max_teams} spots left</p>

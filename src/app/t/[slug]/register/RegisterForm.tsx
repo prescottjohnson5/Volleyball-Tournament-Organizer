@@ -1,13 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import { CaptainLinkCard } from "@/components/CaptainLinkCard";
 
-export function RegisterForm({ slug, feeLabel }: { slug: string; feeLabel: string }) {
+/** Registration form. `feeLabel` is null for free registration, which confirms the team at once. */
+export function RegisterForm({ slug, feeLabel }: { slug: string; feeLabel: string | null }) {
   const [teamName, setTeamName] = useState("");
   const [captainName, setCaptainName] = useState("");
   const [captainEmail, setCaptainEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [registered, setRegistered] = useState<{ token: string; teamName: string } | null>(null);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -18,14 +21,20 @@ export function RegisterForm({ slug, feeLabel }: { slug: string; feeLabel: strin
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ teamName, captainName, captainEmail }),
     });
-    const result = (await response.json().catch(() => ({}))) as { url?: string; error?: string };
+    const result = (await response.json().catch(() => ({}))) as { url?: string; token?: string; teamName?: string; error?: string };
+    if (response.ok && result.token) {
+      setRegistered({ token: result.token, teamName: result.teamName ?? teamName });
+      return;
+    }
     if (!response.ok || !result.url) {
       setBusy(false);
-      setError(result.error ?? "Could not start the payment. Please try again.");
+      setError(result.error ?? (feeLabel ? "Could not start the payment. Please try again." : "Could not register your team. Please try again."));
       return;
     }
     window.location.assign(result.url);
   }
+
+  if (registered) return <CaptainLinkCard token={registered.token} teamName={registered.teamName} />;
 
   return (
     <form onSubmit={onSubmit} className="card space-y-4">
@@ -62,9 +71,13 @@ export function RegisterForm({ slug, feeLabel }: { slug: string; feeLabel: strin
         </p>
       )}
       <button type="submit" className="btn-primary w-full" disabled={busy}>
-        {busy ? "Opening secure checkout…" : `Pay ${feeLabel} and register`}
+        {feeLabel ? (busy ? "Opening secure checkout…" : `Pay ${feeLabel} and register`) : busy ? "Registering…" : "Register team"}
       </button>
-      <p className="text-center text-xs text-slate-500">Payments are processed by Stripe (test mode). Your team is registered once payment is confirmed.</p>
+      {feeLabel ? (
+        <p className="text-center text-xs text-slate-500">Payments are processed by Stripe (test mode). Your team is registered once payment is confirmed.</p>
+      ) : (
+        <p className="text-center text-xs text-slate-500">You will get a private captain link for reporting scores as soon as you register.</p>
+      )}
     </form>
   );
 }
