@@ -28,7 +28,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </span>
               <span>Tournament Organizer</span>
             </Link>
-            <nav className="text-sm">
+            <nav className="flex gap-4 text-sm">
+              <Link href="/demo" className="font-medium text-slate-600 hover:text-brand-700">
+                Demo
+              </Link>
               <Link href="/dashboard" className="font-medium text-slate-600 hover:text-brand-700">
                 Organizers
               </Link>
