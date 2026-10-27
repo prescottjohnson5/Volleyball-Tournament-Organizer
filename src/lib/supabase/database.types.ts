@@ -198,6 +198,16 @@ export type Database = {
         Args: { p_tournament_id: string; p_expected_version: number; p_changes: Json };
         Returns: number;
       };
+      register_free_team: {
+        Args: {
+          p_tournament_id: string;
+          p_team_name: string;
+          p_captain_name: string;
+          p_captain_email: string;
+          p_captain_token_hash: string;
+        };
+        Returns: Json;
+      };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };
