@@ -146,3 +146,24 @@ printed, and that you restarted `npm run dev`.
 
 Useful test cards: `4000 0000 0000 9995` (declined, insufficient funds),
 `4000 0025 0000 3155` (asks for 3-D Secure authentication).
+
+---
+
+## Part D — Run a tournament end to end (scores and live updates)
+
+1. Register at least **3** teams using Part C4 (use a different team name each time). Keep each
+   captain link (open them in different browser profiles or a private window).
+2. On the organizer dashboard, click **Start tournament** → **Yes, start**. The schedule is
+   generated and the *Matches* list appears.
+3. Open the public page (**Public page** link, or `/t/<slug>`) on your phone or in another window.
+   It shows **Live updates on** with a green dot.
+4. Open a captain link for a team with a match marked **Up next**. Enter the first set's score
+   (for example 25 and 20 indoors) and click **Save set 1**.
+5. Without refreshing, the public page and the organizer dashboard show the new score within about a
+   second. Invalid scores (for example 25-24) are rejected with an explanation.
+6. To correct a score, on the dashboard click **Edit score** on that match, change the numbers and
+   click **Save score**.
+
+**If the public page says "Reconnecting (refreshing every 15s)":** Realtime is not enabled for the
+tables. Re-run `supabase/migrations/0004_realtime.sql` and check Part B3. Scores still appear, just
+up to 15 seconds late.
