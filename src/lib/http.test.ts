@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { MissingEnvError } from "./env";
+import { UserFacingError } from "./errors";
 import { HttpError, route, toErrorResponse } from "./http";
 
 describe("toErrorResponse", () => {
@@ -21,6 +22,12 @@ describe("toErrorResponse", () => {
     const res = toErrorResponse(result.error);
     expect(res.status).toBe(400);
     expect((await res.json()).error).toMatch(/^name:/);
+  });
+
+  it("maps rule violations to 422 with their message", async () => {
+    const res = toErrorResponse(new UserFacingError("Set 1 must be won by 2 points."));
+    expect(res.status).toBe(422);
+    expect((await res.json()).error).toBe("Set 1 must be won by 2 points.");
   });
 
   it("hides unexpected errors", async () => {

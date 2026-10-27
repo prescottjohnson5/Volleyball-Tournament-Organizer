@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { MissingEnvError } from "@/lib/env";
+import { UserFacingError } from "@/lib/errors";
 
 /** An error whose message is safe to show to the caller. */
 export class HttpError extends Error {
@@ -21,6 +22,7 @@ export function jsonError(status: number, message: string, details?: unknown) {
 export function toErrorResponse(error: unknown) {
   if (error instanceof HttpError) return jsonError(error.status, error.message);
   if (error instanceof MissingEnvError) return jsonError(503, error.message);
+  if (error instanceof UserFacingError) return jsonError(422, error.message);
   if (error instanceof ZodError) {
     const first = error.issues[0];
     const field = first?.path.join(".");

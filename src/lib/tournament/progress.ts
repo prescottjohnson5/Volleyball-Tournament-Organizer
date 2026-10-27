@@ -1,4 +1,5 @@
 import { findInvalidatedMatches, resolveMatches } from "@/lib/bracket/engine";
+import { UserFacingError } from "@/lib/errors";
 import type { IdFactory, MatchSpec, ResolvedMatch, SeededTeam } from "@/lib/bracket/types";
 import { getFormat, type PlannedTeam } from "@/lib/formats";
 import { validateMatchSets, type SetScore } from "@/lib/rules/ruleset";
@@ -19,7 +20,7 @@ export type TournamentForProgress = Pick<
   "id" | "format" | "format_options" | "environment" | "best_of" | "status" | "champion_team_id"
 >;
 
-export class TournamentRuleError extends Error {
+export class TournamentRuleError extends UserFacingError {
   constructor(message: string) {
     super(message);
     this.name = "TournamentRuleError";
