@@ -13,6 +13,9 @@ export default function HomePage() {
           <Link href="/dashboard" className="btn-primary">
             Organizer dashboard
           </Link>
+          <Link href="/demo" className="btn-secondary">
+            See a live demo
+          </Link>
         </div>
       </section>
     </div>
