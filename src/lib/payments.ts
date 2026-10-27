@@ -1,5 +1,6 @@
 import "server-only";
 import { isPaymentsEnabled } from "@/lib/env";
+import { jsonError } from "@/lib/http";
 import type { TournamentRow } from "@/lib/supabase/database.types";
 
 /**
@@ -8,4 +9,9 @@ import type { TournamentRow } from "@/lib/supabase/database.types";
  */
 export function collectsFees(tournament: Pick<TournamentRow, "registration_fee_cents">): boolean {
   return isPaymentsEnabled() && tournament.registration_fee_cents > 0;
+}
+
+/** Stripe endpoints answer 404 while payments are off, exactly as if they did not exist. */
+export function notFoundUnlessPaymentsEnabled(): Response | null {
+  return isPaymentsEnabled() ? null : jsonError(404, "Not found.");
 }

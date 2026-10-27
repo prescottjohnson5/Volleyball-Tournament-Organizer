@@ -30,11 +30,13 @@ function post(body: string, signature?: string) {
 }
 
 beforeEach(() => {
+  vi.stubEnv("PAYMENTS_ENABLED", "true");
   vi.stubEnv("STRIPE_SECRET_KEY", "sk_test_dummy");
   vi.stubEnv("STRIPE_WEBHOOK_SECRET", SECRET);
 });
 afterEach(() => {
   vi.unstubAllEnvs();
+  vi.clearAllMocks();
 });
 
 describe("POST /api/stripe/webhook", async () => {
@@ -71,6 +73,14 @@ describe("POST /api/stripe/webhook", async () => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     expect((await POST(post(payload, sign(payload)))).status).toBe(500);
     spy.mockRestore();
+  });
+
+  it("returns 404 without touching the event when payments are off", async () => {
+    vi.stubEnv("PAYMENTS_ENABLED", "");
+    const response = await POST(post(payload, sign(payload)));
+    expect(response.status).toBe(404);
+    expect(fakeDeps.wasProcessed).not.toHaveBeenCalled();
+    expect(fakeDeps.confirmPayment).not.toHaveBeenCalled();
   });
 
   it("names the missing secret when it is not configured", async () => {
