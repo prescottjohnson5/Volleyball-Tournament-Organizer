@@ -1,5 +1,6 @@
 import type { PGlite } from "@electric-sql/pglite";
 import { describe, expect, it } from "vitest";
+import { buildCaptainEdit } from "@/lib/scores/edits";
 import type { FormatId, MatchRow, MatchSetRow, TeamRow, TournamentRow } from "@/lib/supabase/database.types";
 import { planScoreEdit, planTournamentStart } from "@/lib/tournament/progress";
 import type { CommitChanges, SetRecord } from "@/lib/tournament/rows";
@@ -102,6 +103,35 @@ describe("tournament progression through the database", () => {
     const final = await load(db, tournamentId);
     expect(final.matches.every((m) => ["completed", "bye", "not_needed"].includes(m.status))).toBe(true);
     expect(final.sets.every((s) => s.reported_by === "captain" && s.reported_by_team_id)).toBe(true);
+  });
+
+  it("lets only one of two captains record the same set when they report at once", async () => {
+    const db = await createTestDb();
+    const tournamentId = await setup(db, "double_elim", 4);
+    const initial = await load(db, tournamentId);
+    let n = 0;
+    await commit(db, tournamentId, 0, planTournamentStart(initial.tournament, initial.teams, () => `30000000-0000-4000-8000-${String(++n).padStart(12, "0")}`, new Date()));
+
+    // Both captains load the same state...
+    const snapshot = await load(db, tournamentId);
+    const match = snapshot.matches.find((m) => m.status === "ready")!;
+    const plan = (s: typeof snapshot, teamId: string, a: number, b: number) =>
+      planScoreEdit(
+        { tournament: s.tournament, teams: s.teams.map((t) => ({ id: t.id, seed: t.seed!, pool: t.pool })), matches: s.matches, sets: s.sets },
+        buildCaptainEdit(s, teamId, match.id, { setNumber: 1, scoreA: a, scoreB: b }),
+        () => crypto.randomUUID(),
+        new Date(),
+      ).changes;
+
+    // ...the first commit wins, the second is rejected by the version check.
+    await commit(db, tournamentId, snapshot.tournament.version, plan(snapshot, match.team_a_id!, 25, 20));
+    await expect(commit(db, tournamentId, snapshot.tournament.version, plan(snapshot, match.team_b_id!, 25, 21))).rejects.toThrow(/version_conflict/);
+
+    // On retry with fresh data, the second captain is told the set already exists.
+    const fresh = await load(db, tournamentId);
+    expect(() => plan(fresh, match.team_b_id!, 25, 21)).toThrow(/already reported/);
+    expect(fresh.sets).toHaveLength(1);
+    expect(fresh.sets[0]).toMatchObject({ score_a: 25, score_b: 20, reported_by_team_id: match.team_a_id });
   });
 
   it("rejects a commit based on a stale version", async () => {
