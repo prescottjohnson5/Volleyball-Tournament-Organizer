@@ -1,0 +1,25 @@
+name: Check
+
+# Lint, type-check and tests on every push. No secrets are needed: the database tests run the
+# real SQL migrations in PGlite (Postgres in WebAssembly).
+on: push
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run check
