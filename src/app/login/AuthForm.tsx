@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { safeNextPath } from "@/lib/safe-redirect";
-import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 type Mode = "login" | "signup";
 
@@ -21,37 +20,27 @@ export function AuthForm({ mode, next }: { mode: Mode; next?: string }) {
     setBusy(true);
     setError(null);
     setMessage(null);
-    const supabase = getSupabaseBrowserClient();
     const destination = safeNextPath(next);
 
-    if (mode === "login") {
-      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-      setBusy(false);
-      if (signInError) {
-        setError(signInError.message);
-        return;
-      }
-      router.replace(destination);
-      router.refresh();
-      return;
-    }
-
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(destination)}` },
-    });
+    // Server routes sign in and set the session cookie on their response.
+    const response = await fetch(mode === "login" ? "/api/auth/signin" : "/api/auth/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    }).catch(() => null);
+    const result = (await response?.json().catch(() => ({}))) as { signedIn?: boolean; error?: string } | undefined;
     setBusy(false);
-    if (signUpError) {
-      setError(signUpError.message);
+    if (!response?.ok) {
+      setError(result?.error ?? "Could not reach the server. Check your connection and try again.");
       return;
     }
-    if (data.session) {
+    if (result?.signedIn) {
       router.replace(destination);
       router.refresh();
-    } else {
-      setMessage("Check your email for a confirmation link, then sign in.");
+      return;
     }
+    // Only happens if the Supabase project still has "Confirm email" switched on.
+    setMessage("Account created. This site requires email confirmation: open the link we sent you, then sign in.");
   }
 
   const isLogin = mode === "login";
