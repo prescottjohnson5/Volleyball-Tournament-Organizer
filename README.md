@@ -2,15 +2,13 @@
 
 A full-stack web app for organizing volleyball tournaments. Organizers create tournaments, teams register and pay online, pool and bracket schedules are generated automatically, and everyone can follow live scores on their phones.
 
-> **Status: in development.** Items marked with a checked box below are working end to end. The rest are
-> planned or in progress. Current progress: both tournament formats, the scoring rules, schedule generation
-> and the demo page work without any keys and are covered by unit tests (including full simulated
-> tournaments for 3 to 33 teams). Organizer sign-up, tournament create/edit/delete, starting a tournament,
-> team registration with QR code, Stripe Checkout and the payment webhook, Stripe Connect payouts (Express
-> onboarding and destination charges), captain score reporting, organizer overrides and the live public page
-> are built and covered by automated tests (SQL runs in an in-memory
-> Postgres; webhook signatures are verified in tests), but have not yet been verified against a live
-> Supabase project or Stripe account, so their boxes stay unticked.
+> **Status: feature-complete, awaiting live verification.** A box is ticked only once that feature has been
+> verified end to end against a live Supabase project and Stripe test account, which has not happened yet, so
+> all boxes are still unticked. Every feature below is implemented, and 324 automated tests pass without any
+> keys: the SQL migrations, RLS policies and database functions run in an in-memory Postgres (PGlite); full
+> tournaments are played through the real SQL for both formats; webhook signatures are verified; and both
+> formats are simulated for every team count from 3 to 33. The keyless [demo](#try-the-demo-without-any-keys)
+> shows the formats, rules and live page working.
 
 ## Features
 
@@ -113,6 +111,67 @@ NEXT_PUBLIC_APP_URL=
 
 Use Stripe **test mode** keys only (the app refuses live keys). Never commit `.env.local`.
 
+## Architecture
+
+```
+Browser (phone)                     Next.js on Vercel                          Supabase / Stripe
+───────────────                     ─────────────────                          ─────────────────
+Public page, captain page  ──read──────────────────────────────────────────▶  Postgres (RLS: public read)
+  └─ Realtime subscription ◀──────────── Postgres Changes ───────────────────  Realtime
+Forms (organizer, captain) ──POST──▶ Route handlers
+                                      ├─ check organizer session / captain token
+                                      ├─ pure TS: rules, formats, bracket engine
+                                      └─ service role ──▶ commit_tournament_changes() (one transaction,
+                                                          optimistic version check)
+Stripe Checkout ◀── create session ─ /api/register/[slug]      (destination charge to organizer)
+Stripe ──── webhook (signed) ──────▶ /api/stripe/webhook ──▶ confirm_team_payment() (locks tournament)
+```
+
+- **All tournament logic is pure TypeScript** in `src/lib/` (no I/O), so it runs in tests, in the demo
+  and in the browser. A match stores *where its teams come from* (seed, bye, winner or loser of another
+  match); `resolveMatches()` derives every team, status and winner from that plus the reported sets.
+- **Public read, restricted write:** RLS lets anyone read tournaments, paid teams, matches and sets.
+  There are no write policies; every write goes through a route handler that authorizes the caller and
+  then uses the service role.
+- **Captains have no account:** a 256-bit token in their private link; only its SHA-256 hash is stored.
+
+### Project structure
+
+| Path | Contents |
+|---|---|
+| `src/lib/rules/` | The ruleset: point targets, best-of, win-by, set and match validation |
+| `src/lib/formats/` | `TournamentFormat` interface, pool play → single elimination, double elimination |
+| `src/lib/bracket/` | Bracket engine, seeding, single-elimination builder, schedule (play order) |
+| `src/lib/tournament/` | Plans the start and every score edit, maps rows ↔ engine, commits atomically |
+| `src/lib/standings.ts` | Pool standings and tiebreakers |
+| `src/lib/stripe/` | Stripe client, idempotent webhook handler, Connect onboarding |
+| `src/lib/scores/` | Captain and organizer score authorization |
+| `src/app/` | Pages and API route handlers (`/t/[slug]`, `/captain/[token]`, `/dashboard`, `/api/...`) |
+| `supabase/migrations/` | SQL to paste into the Supabase SQL Editor, in order |
+| `src/test/db/` | Runs the real migrations in PGlite to test RLS and the SQL functions |
+
+## Testing
+
+`npm test` runs 324 tests in 10–15 seconds with no keys, network or Docker:
+
+- **Rules and formats:** set validation edge cases (deuce, deciding set, best-of-1); byes, odd team counts,
+  double-elimination drops and the grand final reset; property tests that play complete tournaments for
+  every team count from 3 to 33 and check invariants (in double elimination, everyone except the champion
+  has exactly two losses).
+- **Database:** the migration files run in PGlite (Postgres in WebAssembly). Tests check that anonymous
+  users cannot see unpaid teams or captain emails and cannot write; that payment confirmation is
+  idempotent and refunds when full; and that full tournaments play to a champion through
+  `commit_tournament_changes`, including two captains reporting the same set at once.
+- **Payments:** webhook signature verification (wrong secret, tampered body), event idempotency and retry
+  behaviour, and Checkout parameters for destination charges with a platform fee.
+
+## Security notes
+
+- Secrets are only read from environment variables; the service-role and Stripe keys are only used in
+  `server-only` modules. Live Stripe keys are rejected.
+- Captain pages send `Referrer-Policy: no-referrer`; all pages send basic security headers.
+- Not yet implemented: rate limiting on the public API routes (see DECISIONS.md, "Next steps").
+
 ## Design Decisions
 
 Design choices and their tradeoffs are documented in [DECISIONS.md](DECISIONS.md).
@@ -122,5 +181,8 @@ Design choices and their tradeoffs are documented in [DECISIONS.md](DECISIONS.md
 Not planned for the first version: court and time-slot scheduling, multiple divisions per tournament, email notifications and real-money payments.
 
 ## Demo
+
+Run the app and open `/demo` for a keyless, simulated tournament. Deployment steps for Vercel are in
+[SETUP_STEPS.md](SETUP_STEPS.md#part-e--deploy-to-vercel-optional).
 
 _Add a screenshot or a live link here once the app is deployed._
