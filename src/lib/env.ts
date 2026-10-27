@@ -15,6 +15,7 @@ export const ENV_READERS = {
   NEXT_PUBLIC_APP_URL: () => process.env.NEXT_PUBLIC_APP_URL,
   STRIPE_PLATFORM_FEE_PERCENT: () => process.env.STRIPE_PLATFORM_FEE_PERCENT,
   PAYMENTS_ENABLED: () => process.env.PAYMENTS_ENABLED,
+  CRON_SECRET: () => process.env.CRON_SECRET,
 } as const;
 
 export type EnvName = keyof typeof ENV_READERS;
@@ -104,4 +105,11 @@ export function getPlatformFeePercent(): number {
  */
 export function isPaymentsEnabled(): boolean {
   return read("PAYMENTS_ENABLED")?.toLowerCase() === "true";
+}
+
+/** Shared secret for /api/cron/cleanup. Vercel Cron sends it as `Authorization: Bearer <secret>`. */
+export function getCronSecret(): string {
+  const secret = required("CRON_SECRET");
+  if (secret.length < 16) throw new Error("CRON_SECRET must be at least 16 characters long.");
+  return secret;
 }

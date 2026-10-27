@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   getAppUrl,
+  getCronSecret,
   getPlatformFeePercent,
   getStripeSecretKey,
   getStripeWebhookSecrets,
@@ -70,5 +71,14 @@ describe("env", () => {
     expect(isPaymentsEnabled()).toBe(false);
     vi.stubEnv("PAYMENTS_ENABLED", " TRUE ");
     expect(isPaymentsEnabled()).toBe(true);
+  });
+
+  it("requires a long enough CRON_SECRET", () => {
+    vi.stubEnv("CRON_SECRET", "");
+    expect(() => getCronSecret()).toThrow(/CRON_SECRET/);
+    vi.stubEnv("CRON_SECRET", "short");
+    expect(() => getCronSecret()).toThrow(/at least 16/);
+    vi.stubEnv("CRON_SECRET", "a-long-enough-random-secret");
+    expect(getCronSecret()).toBe("a-long-enough-random-secret");
   });
 });
