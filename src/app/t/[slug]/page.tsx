@@ -14,7 +14,9 @@ type Props = { params: Promise<{ slug: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (missingEnv(["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY"]).length > 0) return {};
   const tournament = await getPublicTournament((await params).slug);
-  return tournament ? { title: tournament.name, description: `Live results for ${tournament.name}` } : {};
+  if (!tournament) return {};
+  const description = `Live results for ${tournament.name}`;
+  return { title: tournament.name, description, openGraph: { title: tournament.name, description } };
 }
 
 /** Public, read-only tournament page. No account needed; updates live over Supabase Realtime. */
