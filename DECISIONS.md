@@ -442,6 +442,49 @@ it hourly.
 GitHub Actions runs lint, type-check and the full test suite on every push. Because the database tests
 run the real migrations in PGlite, CI needs no Supabase project, no Docker and no secrets.
 
+## Minimal redesign
+
+### 38. The home screen offers exactly two choices
+**Choice.** The landing page shows only **Create a tournament** and **View a tournament**. Create goes
+to the creation form (through log in, sign-up or **Continue without an account** for visitors who are
+not signed in, then straight back to the form). View goes to a "Find a tournament" page with a name
+search. The simulated demo is listed there as *Sample tournament*, and the sandbox is offered on the
+log-in screen, so neither needs space on the home page.
+
+**Why.** Almost every visitor is either running an event or following one. Asking that one question
+first, and showing nothing else, makes the next click obvious. The earlier home page explained the
+product; the two choices now do that job by doing it.
+
+**Tradeoff.** No pitch or feature list for first-time visitors, and the header "Log in" link reads
+the same whether or not someone is signed in (checking would make every page wait on Supabase). It
+always goes to the dashboard, which asks for a log-in only when needed.
+
+### 39. Sandbox tournaments are never listed publicly
+**Choice.** The browse page lists the signed-in organizer's own tournaments (sandbox included) and every
+tournament with `is_sandbox = false`. Sandbox tournaments stay reachable by their link.
+
+**Why.** Sandbox tournaments are named by anonymous visitors, so listing them would turn the public page
+into a notice board anyone can write on. Real organizers' events are what other visitors are looking for.
+
+**Tradeoff.** A reviewer using the sandbox sees an empty public list on a fresh deployment, with the
+explanation and the sample tournament instead. The list shows the 50 most recent events; search covers
+the rest by name.
+
+### 40. One section at a time: tabs on tournament pages
+**Choice.** The public tournament page shows Matches, Teams, Standings (pool play only) and Bracket as
+tabs, and the organizer's page shows Share, Teams and Settings before the start, then Matches, Teams and
+Share. The open tab lives in the URL hash, and every panel stays mounted so a half-typed form survives a
+tab switch. The primary action (Register a team, Start tournament) sits above the tabs.
+
+**Why.** On a phone the stacked page was several screens of matches, tables and brackets. Tabs keep the
+header and the main action in view and let people jump straight to what they came for.
+
+### 41. Black base, palette as accents
+**Choice.** Backgrounds are black with neutral near-black surfaces; the palette is used sparingly. Sun
+(#E4D329) marks the single main action on a screen, teal (#478B8D) marks links, icons and selected
+choices, midnight (#0D0B61) fills selected cards, and steel (#294669) is used for minor badges. All text
+colours pass WCAG AA on black.
+
 ---
 
 ## Product rules (simplest reasonable option)

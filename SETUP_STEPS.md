@@ -7,8 +7,8 @@ Everything here is a one-time manual step that the code cannot do for you. All c
 There are two ways to run the app:
 
 - **Supabase only (recommended, Parts A to D).** No payments and no email setup. Registration is
-  free and confirmed at once, organizers are signed in right after sign-up, and visitors can press
-  **Try it for real** to get a temporary sandbox without an account. This is what a reviewer needs.
+  free and confirmed at once, organizers are signed in right after sign-up, and visitors can choose
+  **Continue without an account** to get a temporary sandbox. This is what a reviewer needs.
 - **With payments (Part E, optional).** Adds Stripe test-mode registration fees and Stripe Connect
   payouts. Everything in Parts A to D still applies.
 
@@ -31,7 +31,7 @@ There are two ways to run the app:
    ```powershell
    npm run dev
    ```
-   The home page and http://localhost:3000/demo (a simulated tournament) work without keys. Pages
+   The home page and http://localhost:3000/demo (the simulated sample tournament) work without keys. Pages
    that need keys show a yellow **Setup needed** box listing the missing variable names. Open
    http://localhost:3000/setup at any time to see which variables are still missing.
 
@@ -78,7 +78,7 @@ safe to run more than once.
 ### B4. Configure sign-in (no confirmation emails, sandbox on)
 1. Open **Authentication** → **Sign In / Providers**.
 2. Under **User Signups**, turn **on** **Allow anonymous sign-ins**. This powers the
-   **Try it for real** button (a temporary sandbox account, deleted after 24 hours). Click **Save**.
+   **Continue without an account** button (a temporary sandbox account, deleted after 24 hours). Click **Save**.
 3. On the same page, open the **Email** provider and turn **off** **Confirm email**, then **Save**.
    Organizers are then signed in the moment they create an account, and the app never needs to
    send an email. (If you leave it on, sign-up still works, but the organizer has to click a link
@@ -115,13 +115,17 @@ safe to run more than once.
    read when the dev server starts.
 
 ### B6. Try it locally
-1. Open http://localhost:3000 and click **Try it for real**. You land on the organizer dashboard
-   with a yellow **Sandbox: data is deleted daily.** banner.
-2. Click **New tournament**, fill it in (sandbox tournaments allow up to 8 teams) and save.
-3. Click **Copy link** under *Registration link*, open it in a private window and register a team.
+1. Open http://localhost:3000 and click **Create a tournament**. On the log-in screen, click
+   **Continue without an account**. You land on the creation form with a yellow
+   **Sandbox: data is deleted daily.** banner.
+2. Fill in the form (sandbox tournaments allow up to 8 teams) and click **Create tournament**.
+3. On the **Share** tab, click **Copy link** under *Registration link*, open it in a private window and
+   register a team.
    Your private captain link appears immediately. Register at least 3 teams with different names.
-4. Continue with Part C to play the tournament.
-5. To test a real organizer account, open http://localhost:3000/signup in a private window, create an
+4. Back on the home page, click **View a tournament**. Your tournament is listed under
+   *Your tournaments*; open it and check the **Teams** tab.
+5. Continue with Part C to play the tournament.
+6. To test a real organizer account, open http://localhost:3000/signup in a private window, create an
    account and check that you land straight on the dashboard (no email needed).
 
 ---
@@ -129,7 +133,7 @@ safe to run more than once.
 ## Part C — Run a tournament end to end (scores and live updates)
 
 1. With at least **3** registered teams, click **Start tournament** → **Yes, start** on the organizer
-   dashboard. The schedule is generated and the *Matches* list appears.
+   page. The schedule is generated and the **Matches** tab opens.
 2. Open the public page (**Public page** link, or `/t/<slug>`) on your phone or in another window.
    It shows **Live updates on** with a green dot.
 3. Open a captain link for a team with a match marked **Up next**. Enter the first set's score

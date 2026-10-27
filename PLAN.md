@@ -49,3 +49,8 @@ Connect (Express, destination charges) routes money to organizers.
 - Sign-up without confirmation emails; sign-up and sign-in through server routes.
 - "Try it for real" sandbox with Supabase anonymous sign-ins (1 tournament, 8 teams), daily cleanup cron.
 - Per-IP rate limits, plain-English home page with Open Graph tags, GitHub Actions CI.
+
+## Phase 8: Minimal redesign
+- Black theme with the palette as accents; a two-choice home (create or view).
+- A "Find a tournament" page; tabs on the public and organizer tournament pages.
+- A sectioned creation form with per-field validation.
