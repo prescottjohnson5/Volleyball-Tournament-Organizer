@@ -118,6 +118,12 @@ export type StripeEventRow = {
   processed_at: string;
 };
 
+export type RateLimitRow = {
+  key: string;
+  window_start: string;
+  hits: number;
+};
+
 type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 
 export type Database = {
@@ -187,6 +193,7 @@ export type Database = {
         Optional<MatchSetRow, "id" | "reported_by_team_id" | "reported_by_user_id" | "reported_at">
       >;
       stripe_events: Table<StripeEventRow, Optional<StripeEventRow, "processed_at">>;
+      rate_limits: Table<RateLimitRow, Optional<RateLimitRow, "hits">>;
     };
     Views: { [_ in never]: never };
     Functions: {
@@ -207,6 +214,10 @@ export type Database = {
           p_captain_token_hash: string;
         };
         Returns: Json;
+      };
+      rate_limit_hit: {
+        Args: { p_key: string; p_window_seconds: number };
+        Returns: number;
       };
     };
     Enums: { [_ in never]: never };
