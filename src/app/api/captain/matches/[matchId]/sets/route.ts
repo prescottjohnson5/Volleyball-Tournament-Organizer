@@ -1,4 +1,5 @@
 import { HttpError, readJson, route } from "@/lib/http";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { buildCaptainEdit } from "@/lib/scores/edits";
 import { bearerToken, captainSetSchema } from "@/lib/scores/schema";
 import { applyScoreEdit, findCaptainByToken } from "@/lib/scores/server";
@@ -9,6 +10,7 @@ type Context = { params: Promise<{ matchId: string }> };
 
 /** A captain reports one completed set. Auth: `Authorization: Bearer <captain token>`. */
 export const POST = route(async (request: Request, { params }: Context) => {
+  await enforceRateLimit(request, "reportScore");
   const token = bearerToken(request.headers.get("authorization"));
   if (!token) throw new HttpError(401, "Missing captain link token.");
   const matchId = parseId((await params).matchId, "match");

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { generateCaptainToken, hashCaptainToken } from "@/lib/captain-token";
 import { HttpError, readJson, route } from "@/lib/http";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const claimSchema = z.object({ sessionId: z.string().regex(/^cs_[A-Za-z0-9_]+$/, "Invalid checkout session") });
@@ -11,6 +12,7 @@ const claimSchema = z.object({ sessionId: z.string().regex(/^cs_[A-Za-z0-9_]+$/,
  * claim ticket: it is long, random and only known to the paying captain's browser.
  */
 export const POST = route(async (request: Request) => {
+  await enforceRateLimit(request, "claimCaptainLink");
   const { sessionId } = claimSchema.parse(await readJson(request));
   const db = createSupabaseAdminClient();
 

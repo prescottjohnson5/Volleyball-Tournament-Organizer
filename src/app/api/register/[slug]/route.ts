@@ -1,6 +1,7 @@
 import { getAppUrl } from "@/lib/env";
 import { readJson, route } from "@/lib/http";
 import { collectsFees } from "@/lib/payments";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { registrationSchema } from "@/lib/registration/schema";
 import { getOpenTournament, registerWithoutPayment, startPaidRegistration } from "@/lib/registration/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -13,6 +14,7 @@ type Context = { params: Promise<{ slug: string }> };
  * counts once the webhook confirms payment.
  */
 export const POST = route(async (request: Request, { params }: Context) => {
+  await enforceRateLimit(request, "register");
   const { slug } = await params;
   const input = registrationSchema.parse(await readJson(request));
   const db = createSupabaseAdminClient();
