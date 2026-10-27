@@ -1,0 +1,67 @@
+import { z } from "zod";
+import type { Json, TournamentRow } from "@/lib/supabase/database.types";
+
+const isoDate = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "Use the format YYYY-MM-DD")
+  .refine((value) => {
+    const date = new Date(`${value}T00:00:00Z`);
+    return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(value);
+  }, "Not a real calendar date");
+
+export const poolOptionsSchema = z.object({
+  poolSize: z.number().int().min(3).max(6).default(4),
+  advancePerPool: z.number().int().min(1).max(4).default(2),
+});
+
+/** What the organizer submits when creating or editing a tournament. */
+export const tournamentInputSchema = z.object({
+  name: z.string().trim().min(3, "Name must be at least 3 characters").max(100),
+  eventDate: isoDate,
+  location: z.string().trim().min(1, "Location is required").max(200),
+  environment: z.enum(["indoor", "outdoor"]),
+  format: z.enum(["pool_to_single_elim", "double_elim"]),
+  bestOf: z.union([z.literal(1), z.literal(3), z.literal(5)]),
+  maxTeams: z.number().int().min(3, "At least 3 teams").max(64, "At most 64 teams"),
+  registrationFeeCents: z
+    .number()
+    .int()
+    .min(100, "The registration fee must be at least $1.00")
+    .max(1_000_000, "The registration fee must be at most $10,000"),
+  poolOptions: poolOptionsSchema.optional(),
+});
+
+export type TournamentInput = z.infer<typeof tournamentInputSchema>;
+
+/** Maps validated input to database columns (shared by create and update). */
+export function toTournamentColumns(input: TournamentInput) {
+  const formatOptions: Json =
+    input.format === "pool_to_single_elim" ? poolOptionsSchema.parse(input.poolOptions ?? {}) : {};
+  return {
+    name: input.name,
+    event_date: input.eventDate,
+    location: input.location,
+    environment: input.environment,
+    format: input.format,
+    format_options: formatOptions,
+    best_of: input.bestOf,
+    max_teams: input.maxTeams,
+    registration_fee_cents: input.registrationFeeCents,
+  } satisfies Partial<TournamentRow>;
+}
+
+/** Inverse of toTournamentColumns, used to pre-fill the edit form. */
+export function toTournamentInput(row: TournamentRow): TournamentInput {
+  const poolOptions = poolOptionsSchema.safeParse(row.format_options);
+  return {
+    name: row.name,
+    eventDate: row.event_date,
+    location: row.location,
+    environment: row.environment,
+    format: row.format,
+    bestOf: row.best_of as 1 | 3 | 5,
+    maxTeams: row.max_teams,
+    registrationFeeCents: row.registration_fee_cents,
+    poolOptions: poolOptions.success ? poolOptions.data : undefined,
+  };
+}
