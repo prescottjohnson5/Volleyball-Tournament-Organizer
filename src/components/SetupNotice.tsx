@@ -23,6 +23,13 @@ export function SetupNotice({ problems }: { problems: readonly EnvProblem[] }) {
           </li>
         ))}
       </ul>
+      <p className="border-t border-sun/20 pt-3 text-sm text-ink-muted">
+        Just looking around? The{" "}
+        <Link href="/sandbox" className="link">
+          sandbox
+        </Link>{" "}
+        works without any setup.
+      </p>
     </div>
   );
 }
