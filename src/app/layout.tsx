@@ -5,7 +5,7 @@ import { LogoMark } from "@/components/Icons";
 import "./globals.css";
 
 const DESCRIPTION =
-  "Run your volleyball tournament from your phone: teams sign up with one link, pools and brackets build themselves, and everyone follows live scores.";
+  "Tournaments made easy: teams sign up with one link, pools and brackets build themselves, and everyone follows live scores.";
 
 /** Absolute base for Open Graph URLs: NEXT_PUBLIC_APP_URL, else the Vercel production URL, else localhost. */
 function siteUrl(): URL {

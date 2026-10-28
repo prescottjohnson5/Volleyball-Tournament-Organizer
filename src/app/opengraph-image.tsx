@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
-export const alt = "Volleyball Tournament Organizer: run your volleyball tournament from your phone";
+export const alt = "Volleyball Tournament Organizer: tournaments made easy";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -31,7 +31,7 @@ export default async function OpenGraphImage() {
           <div style={{ fontSize: 36, color: "#e4d329" }}>Volleyball Tournament Organizer</div>
         </div>
         <div style={{ display: "flex", marginTop: 56, fontSize: 64, lineHeight: 1.2, maxWidth: 1040 }}>
-          Run your volleyball tournament from your phone.
+          Tournaments made easy.
         </div>
         <div style={{ display: "flex", marginTop: 40, fontSize: 32, lineHeight: 1.35, color: "#c9cce6", maxWidth: 1040 }}>
           Team sign-up, automatic pools and brackets, live scores for everyone.
