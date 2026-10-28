@@ -54,3 +54,9 @@ Connect (Express, destination charges) routes money to organizers.
 - Black theme with the palette as accents; a two-choice home (create or view).
 - A "Find a tournament" page; tabs on the public and organizer tournament pages.
 - A sectioned creation form with per-field validation.
+
+## Phase 9: Working demo and AWS
+- A "Tournaments made easy" landing page before any log-in.
+- A browser sandbox that needs no account or database, run by the real engine.
+- Supabase settings validated with clear messages; `/setup` tests the live connection.
+- DEPLOY_AWS.md, `deploy/` and `/api/health` for one EC2 server with a `.click` domain.

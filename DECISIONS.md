@@ -444,7 +444,7 @@ run the real migrations in PGlite, CI needs no Supabase project, no Docker and n
 
 ## Minimal redesign
 
-### 38. The home screen offers exactly two choices
+### 38. The home screen offers exactly two choices (the pitch came back in 42)
 **Choice.** The landing page shows only **Create a tournament** and **View a tournament**. Create goes
 to the creation form (through log in, sign-up or **Continue without an account** for visitors who are
 not signed in, then straight back to the form). View goes to a "Find a tournament" page with a name
@@ -485,6 +485,74 @@ header and the main action in view and let people jump straight to what they cam
 choices, midnight (#0D0B61) fills selected cards, and steel (#294669) is used for minor badges. All text
 colours pass WCAG AA on black.
 
+## Working without an account, and on AWS
+
+### 42. A landing page first, still with two actions
+**Choice.** The first page is a product landing page: the headline *Tournaments made easy*, one sentence
+on what the app does, the two primary buttons (**Create a Tournament**, **View a Tournament**), a quiet
+link to the sandbox, a still preview of a live match and bracket drawn with the app's own styles, and
+three one-line features. Nobody is sent to a log-in screen until they choose to create a tournament.
+
+**Why.** The bare two-choice screen (38) made the next click obvious, but it did not say what the product
+is; first-time visitors met it as a menu. The two actions stay the only buttons, so the page explains
+without adding decisions.
+
+### 43. The no-account path is a browser sandbox, not an anonymous account
+**Choice.** **Continue without an account** opens `/sandbox`: one practice tournament kept in the
+visitor's localStorage. It is created with the real form and run by the real formats, bracket engine and
+`applyScoreChange()` (the same function `planScoreEdit()` uses on the server), and shown with the real
+tournament components. A sample tournament part-way through pool play is one click away. The Supabase
+anonymous sandbox (34, 36) stays as an optional *online sandbox*, offered only when anonymous sign-ins
+are switched on.
+
+**Why.** The anonymous sandbox needed a fully working Supabase project with anonymous sign-ins on, so on
+a fresh or half-configured deployment the button failed. The browser sandbox works with no backend, no
+rate limit and no cleanup, and cannot write into real tournaments because nothing in it leaves the
+browser. Sharing one engine means the practice tournament cannot drift from the real rules.
+
+**Tradeoff.** A browser sandbox tournament has no public page, registration link, captain links or live
+updates on other phones, and lives in one browser only; the page says so. It cannot be carried over into
+a real account yet.
+
+### 44. Configuration is validated, not only checked for presence
+**Choice.** `env.ts` trims a trailing slash or a copied `/rest/v1` from `NEXT_PUBLIC_SUPABASE_URL`, and
+rejects a non-URL, the supabase.com dashboard link and the app's own address. It refuses a service-role
+key in `NEXT_PUBLIC_SUPABASE_ANON_KEY` (that value is sent to every browser) and the anon key as the
+service-role key. Pages show which variable is wrong and why, never the value. The proxy reads the
+settings through the same module instead of `process.env` directly.
+
+**Why.** A real setup failed with PostgREST's "Invalid path specified in request URL" (PGRST125) and an
+HTML 404, because the URL had extra path on it. Each of those mistakes is easy to make when copying from
+the dashboard, and each failed far from its cause.
+
+### 45. `/setup` tests the live connection
+**Choice.** The setup page checks, in order, the variables, whether Supabase answers and accepts the anon
+key, whether anonymous sign-ins are on, whether the service-role key is accepted, and whether the tables
+and columns of each migration exist (naming the file to run). It also notes an app URL that differs from
+the address in use.
+
+**Why.** "It talks about Supabase things" is hard to act on. One page that says *run 0006_rate_limits.sql*
+or *this is the dashboard address* turns setup into a checklist, locally and on the server.
+
+**Tradeoff.** RLS (0002), the functions (0003, 0005) and Realtime (0004) cannot be checked through the
+API without side effects, so the page says to run every file. The page is public, but it shows only
+variable names, the project host and pass or fail.
+
+### 46. AWS hosting is one EC2 server with Caddy and pm2
+**Choice.** DEPLOY_AWS.md runs `next start` on one free-tier EC2 instance, kept alive by pm2, behind
+Caddy for automatic HTTPS, with the domain and DNS in Route 53. `deploy/update.sh` pulls, builds,
+restarts and waits for `/api/health`. The daily cleanup becomes a crontab line that reads `CRON_SECRET`
+from `.env.local`.
+
+**Why.** It is the plain Node setup the app already supports, so nothing in the code is AWS-specific,
+and every piece is free or nearly free. Caddy also replaces a client-sent `X-Forwarded-For` with the
+real address, which the per-IP rate limits rely on. Amplify Hosting was the alternative, but its
+Next.js support follows new major versions with a delay, and its runtime environment variables need
+extra build steps.
+
+**Tradeoff.** You patch and update the server yourself, there are no preview deployments, and the site
+is briefly slow while `npm run build` runs on a 1 GB instance (with swap).
+
 ---
 
 ## Product rules (simplest reasonable option)
@@ -495,7 +563,8 @@ colours pass WCAG AA on black.
 | Minimum teams | 3 | Two teams is a single match, not a tournament. |
 | Editing a tournament | Only while registration is open. Max teams cannot drop below the number of paid teams. | Changing format or rules after the bracket exists would invalidate it. |
 | Deleting a tournament | Refused once any team is registered. | Deleting would orphan real (test) payments. Cancelling with refunds is out of scope. |
-| Sandbox limits | 1 tournament, up to 8 teams, no fee, deleted after 24 hours. | Enough to try every feature, too small to be worth abusing. |
+| Browser sandbox | 1 tournament per browser, up to 64 teams, saved in localStorage until Start over. | Same limits as a real tournament; it costs the server nothing. |
+| Online sandbox limits | 1 tournament, up to 8 teams, no fee, deleted after 24 hours. | Enough to try every feature, too small to be worth abusing. |
 | Public URL | `/t/<name>-<6 random chars>` | Readable, shareable, not guessable by counting. |
 | Organizer session check | `supabase.auth.getClaims()` on the server | It verifies the JWT; `getSession()` only reads the cookie. |
 
@@ -505,11 +574,11 @@ colours pass WCAG AA on black.
 
 Honest gaps, roughly in the order I would tackle them:
 
-1. **Verify against live services.** Everything is covered by automated tests, but the full flow has not
-   been run against a real Supabase project (and, with payments on, a Stripe test account) yet. See
-   SETUP_STEPS.md.
-2. **Upgrade a sandbox into a real account** by linking an email to the anonymous user, instead of
-   starting fresh.
+1. **Verify against live services.** The setup check has confirmed a live Supabase project's keys and
+   tables, but the full organizer, registration and captain flow has not been run against it yet (nor,
+   with payments on, a Stripe test account). See SETUP_STEPS.md.
+2. **Carry a sandbox into a real account:** import the browser sandbox tournament after sign-up, or link
+   an email to an online sandbox user, instead of starting fresh.
 3. **Seeding control.** Seeds follow registration order. A drag-to-reorder screen before starting the
    tournament would let organizers seed by skill.
 4. **Rename `payment_status` to `registration_status`** now that free registration exists (32).
