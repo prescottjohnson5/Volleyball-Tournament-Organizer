@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { BackLink } from "@/components/BackLink";
 import { SearchIcon } from "@/components/Icons";
 import { SetupNotice } from "@/components/SetupNotice";
+import { SandboxListRow } from "@/components/sandbox/SandboxListRow";
 import { ListRowLink, TournamentList } from "@/components/tournament/TournamentList";
 import { getOrganizer } from "@/lib/auth";
 import { listOrganizerTournaments } from "@/lib/data/dashboard";
@@ -44,6 +46,9 @@ export default async function BrowseTournamentsPage({ searchParams }: { searchPa
         </h2>
         <div className="border-t border-line">
           <div className="border-b border-line">
+            <SandboxListRow />
+          </div>
+          <div className="border-b border-line">
             <ListRowLink href="/demo" title="Sample tournament" detail="Simulated teams and scores" />
           </div>
         </div>
@@ -52,12 +57,32 @@ export default async function BrowseTournamentsPage({ searchParams }: { searchPa
   );
 }
 
+/** Loads both lists, or returns null when the database cannot be read (the reason is logged, not shown). */
+async function loadLists(query: string) {
+  try {
+    const organizer = await getOrganizer();
+    const [mine, all] = await Promise.all([organizer ? listOrganizerTournaments(organizer.id) : [], listPublicTournaments(query)]);
+    return { mine, all };
+  } catch (error) {
+    console.error("Could not list tournaments:", error instanceof Error ? error.message : error);
+    return null;
+  }
+}
+
 async function Results({ query }: { query: string }) {
-  const organizer = await getOrganizer();
-  const [mine, all] = await Promise.all([
-    organizer ? listOrganizerTournaments(organizer.id) : [],
-    listPublicTournaments(query),
-  ]);
+  const lists = await loadLists(query);
+  if (!lists) {
+    return (
+      <p className="notice text-sm text-sun-100" role="alert">
+        Tournaments could not be loaded right now. Try again in a moment. Run this site? The{" "}
+        <Link href="/setup" className="underline">
+          setup check
+        </Link>{" "}
+        shows what is wrong.
+      </p>
+    );
+  }
+  const { mine, all } = lists;
   const mineMatching = sortForBrowsing(mine.filter((t) => matchesSearch(t, query)));
   const mineIds = new Set(mine.map((t) => t.id));
   const others = all.filter((t) => !mineIds.has(t.id));
