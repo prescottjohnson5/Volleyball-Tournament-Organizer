@@ -4,7 +4,8 @@ import type { FormatId } from "@/lib/supabase/database.types";
 import { viewFromSimulation, type TournamentView } from "@/lib/view";
 import { simulateTournament } from "./simulate";
 
-const TEAM_NAMES = [
+/** Realistic team names for demo and sandbox data. */
+export const TEAM_NAMES = [
   "Sand Sharks", "Net Ninjas", "Block Party", "Dig Deep", "Spike Force", "Set to Kill", "Ace Squad", "Bump Set Spike",
   "Kiss My Ace", "Sets on the Beach", "Hit Happens", "Serves You Right", "Pass Masters", "The Diggers", "Free Ballers", "Cloud Nine",
   "Tip Top", "Roof Raisers", "Side Out", "Pancake House", "Overpass", "Jump Float", "Pipe Dreams", "Quick Set",

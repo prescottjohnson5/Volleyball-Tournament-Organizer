@@ -3,7 +3,7 @@ import type { MatchSpec, ResolvedMatch, SlotSource } from "@/lib/bracket/types";
 import { createRuleset, type BestOf, type Ruleset, type SetScore } from "@/lib/rules/ruleset";
 import type { Json, MatchRow, MatchSetRow, Reporter, TournamentRow } from "@/lib/supabase/database.types";
 
-const slotSourceSchema: z.ZodType<SlotSource> = z.discriminatedUnion("type", [
+export const slotSourceSchema: z.ZodType<SlotSource> = z.discriminatedUnion("type", [
   z.object({ type: z.literal("team"), teamId: z.string() }),
   z.object({ type: z.literal("bye") }),
   z.object({ type: z.literal("winner"), matchId: z.string() }),
