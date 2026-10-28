@@ -7,13 +7,17 @@ Everything here is a one-time manual step that the code cannot do for you. All c
 There are two ways to run the app:
 
 - **Supabase only (recommended, Parts A to D).** No payments and no email setup. Registration is
-  free and confirmed at once, organizers are signed in right after sign-up, and visitors can choose
-  **Continue without an account** to get a temporary sandbox. This is what a reviewer needs.
+  free and confirmed at once, and organizers are signed in right after sign-up. This is what a
+  reviewer needs. (**Continue without an account** opens the browser sandbox, which works even
+  before Part B.)
 - **With payments (Part E, optional).** Adds Stripe test-mode registration fees and Stripe Connect
   payouts. Everything in Parts A to D still applies.
 
 > **Never paste keys into chat, commit them, or share screenshots of them.** They only go in
-> `.env.local` (which Git ignores) and in Vercel's environment variable settings.
+> `.env.local` (which Git ignores), on your server, or in Vercel's environment variable settings.
+>
+> **Putting it online on AWS?** Do Parts A to C locally first, then follow
+> [DEPLOY_AWS.md](DEPLOY_AWS.md) instead of Part D.
 
 ---
 
@@ -31,9 +35,10 @@ There are two ways to run the app:
    ```powershell
    npm run dev
    ```
-   The home page and http://localhost:3000/demo (the simulated sample tournament) work without keys. Pages
-   that need keys show a yellow **Setup needed** box listing the missing variable names. Open
-   http://localhost:3000/setup at any time to see which variables are still missing.
+   The home page, the browser sandbox (**Create a Tournament** → **Continue without an account**, or
+   http://localhost:3000/sandbox) and http://localhost:3000/demo work without keys. Pages that need
+   Supabase show a yellow box naming each missing or wrong variable. Open http://localhost:3000/setup
+   at any time: it tests the whole connection and says what to fix.
 
 ---
 
@@ -75,10 +80,11 @@ safe to run more than once.
 2. Click **supabase_realtime**. The tables `tournaments`, `teams`, `matches` and `match_sets`
    should be switched on. If not, run `0004_realtime.sql` again.
 
-### B4. Configure sign-in (no confirmation emails, sandbox on)
+### B4. Configure sign-in (no confirmation emails)
 1. Open **Authentication** → **Sign In / Providers**.
-2. Under **User Signups**, turn **on** **Allow anonymous sign-ins**. This powers the
-   **Continue without an account** button (a temporary sandbox account, deleted after 24 hours). Click **Save**.
+2. Optional: under **User Signups**, turn **on** **Allow anonymous sign-ins** and click **Save**. This
+   adds the *online sandbox*, a shareable tournament without an account that is deleted after 24
+   hours. **Continue without an account** works without it: it opens the browser sandbox.
 3. On the same page, open the **Email** provider and turn **off** **Confirm email**, then **Save**.
    Organizers are then signed in the moment they create an account, and the app never needs to
    send an email. (If you leave it on, sign-up still works, but the organizer has to click a link
@@ -97,7 +103,8 @@ safe to run more than once.
    ```
 2. In Supabase, click the **Connect** button at the top of the project (or open
    **Project Settings** → **Data API**) and copy the **Project URL** into
-   `NEXT_PUBLIC_SUPABASE_URL`.
+   `NEXT_PUBLIC_SUPABASE_URL`. It is only the address, like `https://abcdefghijklmnop.supabase.co`:
+   not the `supabase.com/dashboard/...` link from your browser, and nothing after `.supabase.co`.
 3. Open **Project Settings** → **API Keys**:
    - Copy the **publishable** key (starts with `sb_publishable_`) into
      `NEXT_PUBLIC_SUPABASE_ANON_KEY`. (On older projects, the legacy **anon** key works too.)
@@ -105,7 +112,7 @@ safe to run more than once.
      (On older projects, the legacy **service_role** key works too.) This key bypasses all
      security rules: it is only ever read on the server and must never be shared.
 4. Set `NEXT_PUBLIC_APP_URL=http://localhost:3000`.
-5. Make a random `CRON_SECRET` (it protects the daily sandbox cleanup). Run this in PowerShell and
+5. Make a random `CRON_SECRET` (it protects the daily cleanup of online sandbox data). Run this in PowerShell and
    paste the output after `CRON_SECRET=`:
    ```powershell
    node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
@@ -113,20 +120,26 @@ safe to run more than once.
 6. Leave `PAYMENTS_ENABLED` and all `STRIPE_` lines empty.
 7. Save the file, then stop (`Ctrl+C`) and restart `npm run dev`. Environment variables are only
    read when the dev server starts.
+8. Open http://localhost:3000/setup. Every line should say **OK** or **Note**. A **Fix** line names
+   the variable to correct or the migration file to run.
 
 ### B6. Try it locally
-1. Open http://localhost:3000 and click **Create a tournament**. On the log-in screen, click
-   **Continue without an account**. You land on the creation form with a yellow
-   **Sandbox: data is deleted daily.** banner.
-2. Fill in the form (sandbox tournaments allow up to 8 teams) and click **Create tournament**.
-3. On the **Share** tab, click **Copy link** under *Registration link*, open it in a private window and
-   register a team.
-   Your private captain link appears immediately. Register at least 3 teams with different names.
-4. Back on the home page, click **View a tournament**. Your tournament is listed under
+1. Open http://localhost:3000 and click **Create a Tournament**, then **Continue without an account**
+   on the log-in screen. This is the browser sandbox: create a practice tournament (or open the
+   sample at http://localhost:3000/sandbox), add teams, start it and enter scores. It is saved only in
+   this browser.
+2. For a real tournament, open http://localhost:3000/signup in a private window and create an account.
+   You land straight on the dashboard (no email needed). Click **New tournament**, fill in the form and
+   click **Create tournament**.
+3. On the **Share** tab, click **Copy link** under *Registration link*, open it in another private window
+   and register a team. Your private captain link appears immediately. Register at least 3 teams with
+   different names.
+4. Back on the home page, click **View a Tournament**. Your tournament is listed under
    *Your tournaments*; open it and check the **Teams** tab.
 5. Continue with Part C to play the tournament.
-6. To test a real organizer account, open http://localhost:3000/signup in a private window, create an
-   account and check that you land straight on the dashboard (no email needed).
+6. Optional, with anonymous sign-ins on (B4): on http://localhost:3000/sandbox, open
+   *How is the sandbox different from a real tournament?* and click **Start the online sandbox**. You
+   get a real, shareable tournament (up to 8 teams) with a **Sandbox: data is deleted daily.** banner.
 
 ---
 
@@ -294,11 +307,11 @@ Useful test cards: `4000 0000 0000 9995` (declined, insufficient funds),
 
 | Variable | Where it comes from | Required |
 |---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Connect / Project Settings → Data API | Yes |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Connect / Project Settings → Data API (only `https://<ref>.supabase.co`) | Yes |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Project Settings → API Keys → publishable (or legacy anon) | Yes |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → API Keys → secret (or legacy service_role) | Yes |
-| `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` locally; your Vercel address in production | Yes |
-| `CRON_SECRET` | A random string you generate (Part B5), at least 16 characters | Yes, for the daily cleanup |
+| `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` locally; your live address (AWS domain or Vercel) in production | Yes, in production |
+| `CRON_SECRET` | A random string you generate (Part B5), at least 16 characters | Only for the online sandbox cleanup |
 | `PAYMENTS_ENABLED` | `true` to charge registration fees; empty for free registration | No (default off) |
 | `STRIPE_SECRET_KEY` | Stripe (test mode) → Developers → API keys → Secret key `sk_test_…` | Only with payments |
 | `STRIPE_WEBHOOK_SECRET` | `stripe listen` output locally; webhook endpoint secret(s) on Vercel | Only with payments |
