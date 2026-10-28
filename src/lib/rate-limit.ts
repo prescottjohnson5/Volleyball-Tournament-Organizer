@@ -26,8 +26,9 @@ export type RateLimitName = keyof typeof RATE_LIMITS;
 export type HitCounter = (key: string, windowSeconds: number) => Promise<number>;
 
 /**
- * The caller's IP address. On Vercel, x-forwarded-for is set by the platform (a client-sent value
- * is not trusted), and its first entry is the client.
+ * The caller's IP address. On Vercel, x-forwarded-for is set by the platform, and behind Caddy (the AWS
+ * setup in DEPLOY_AWS.md) a client-sent value is replaced with the real address, so its first entry is
+ * the client.
  */
 export function clientIp(headers: Headers): string {
   const forwarded = headers.get("x-forwarded-for")?.split(",")[0]?.trim();

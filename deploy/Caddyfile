@@ -1,0 +1,6 @@
+# Caddy serves the app over HTTPS and gets the certificate by itself (see DEPLOY_AWS.md).
+# Replace yourdomain.click, then: sudo cp deploy/Caddyfile /etc/caddy/Caddyfile && sudo systemctl reload caddy
+yourdomain.click {
+	encode zstd gzip
+	reverse_proxy localhost:3000
+}
