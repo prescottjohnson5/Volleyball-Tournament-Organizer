@@ -2,12 +2,15 @@
 
 A full-stack web app for organizing volleyball tournaments. Organizers create tournaments, teams register
 with one link, pool and bracket schedules are generated automatically, and everyone can follow live scores
-on their phones. Anyone can try it for real in a private sandbox, with no account and no payment setup.
+on their phones. Anyone can try it in a sandbox that runs in their own browser, with no account and no
+database.
 
-> **Status: feature-complete, not yet verified against a live Supabase project.** A box below is ticked only
-> once that feature has been tested end to end against a live Supabase project (and, for the payment
-> features, a Stripe test account). That has not happened yet, so all boxes are unticked. Every feature is
-> implemented, and 401 automated tests pass without any keys: the SQL migrations, RLS policies and database
+> **Status: feature-complete; connected to a live Supabase project, most features not yet tested end to end
+> on it.** A box below is ticked only once that feature has been tested end to end in a real browser,
+> against a live Supabase project where it needs one (and, for the payment features, a Stripe test account).
+> So far that covers the landing page, the browser sandbox and the setup check; the setup check has
+> confirmed against a live project that both keys are accepted and the tables from the migrations exist.
+> Every feature is implemented, and 426 automated tests pass without any keys: the SQL migrations, RLS policies and database
 > functions run in an in-memory Postgres (PGlite); full tournaments are played through the real SQL for both
 > formats; the registration, Stripe, sign-up, sandbox and cleanup routes are tested with payments both on
 > and off; and both formats are simulated for every team count from 3 to 33. The keyless
@@ -16,15 +19,17 @@ on their phones. Anyone can try it for real in a private sandbox, with no accoun
 ## Features
 
 - [ ] Organizer accounts (signed in right after sign-up, no confirmation email) and a dashboard for creating and managing tournaments
-- [ ] A two-choice home screen: **Create a tournament** or **View a tournament** (search and pick one)
-- [ ] **Continue without an account:** a private sandbox via Supabase anonymous sign-ins (1 tournament, 8 teams, deleted daily)
+- [x] A landing page (**Tournaments made easy**) with two actions: **Create a Tournament** or **View a Tournament** (search and pick one)
+- [x] **Continue without an account:** a browser sandbox. Open a sample tournament or create your own, add teams, start it, enter scores and follow standings and the bracket, with the real formats and rules. Saved only in that browser; works without Supabase
+- [x] A setup check at `/setup` that tests the live configuration (missing or wrong variables, both keys, each migration's tables) and never shows a secret
+- [ ] Optional online sandbox via Supabase anonymous sign-ins (1 shareable tournament, 8 teams, deleted daily), offered only when anonymous sign-ins are on
 - [ ] Team registration through a shareable link or QR code, confirmed at once with a private captain link
 - [ ] Two formats: pool play into single elimination, or double elimination
 - [ ] Score reporting by team captains, with organizer override
 - [ ] Live score updates on players' phones using Supabase Realtime
 - [ ] Public tournament page with tabs for matches, teams, pool standings and bracket
 - [ ] Per-IP rate limits on public routes, sign-up, sign-in and the sandbox, with friendly error messages
-- [ ] Daily cleanup of sandbox data (Vercel Cron, protected by `CRON_SECRET`)
+- [ ] Daily cleanup of online sandbox data (Vercel Cron or a server crontab, protected by `CRON_SECRET`)
 - [ ] Optional, behind `PAYMENTS_ENABLED`: registration fees with Stripe Checkout, confirmed by Stripe webhooks
 - [ ] Optional, behind `PAYMENTS_ENABLED`: payouts to organizers through Stripe Connect (test mode)
 
@@ -36,13 +41,13 @@ on their phones. Anyone can try it for real in a private sandbox, with no accoun
 | Database, auth, live updates | Supabase (Postgres, Row Level Security, anonymous sign-ins, Realtime) |
 | Payments (optional) | Stripe Checkout and Stripe Connect, test mode only |
 | Testing and CI | Vitest, PGlite, GitHub Actions |
-| Hosting | Vercel (including Vercel Cron) |
+| Hosting | One AWS EC2 server with Caddy and pm2 ([DEPLOY_AWS.md](DEPLOY_AWS.md)), or Vercel |
 
 ## How It Works
 
-1. An organizer picks **Create a tournament**, signs up (or continues without an account, in a sandbox),
-   fills in the form and shares the
-   registration link or QR code.
+1. An organizer picks **Create a Tournament**, signs up, fills in the form and shares the registration
+   link or QR code. (Or continues without an account and runs a practice tournament in the browser
+   sandbox.)
 2. A team captain registers. The team is confirmed immediately and the captain gets a private link for
    reporting scores. (With payments on, the captain pays through Stripe Checkout first, and a Stripe
    webhook confirms the team.)
@@ -75,7 +80,7 @@ far the tournament has progressed.
 
 ## Getting Started
 
-Requires Node.js 20 or newer. Commands below are for Windows PowerShell (they also work in bash,
+Requires Node.js 20.9 or newer. Commands below are for Windows PowerShell (they also work in bash,
 except `Copy-Item`, which is `cp` there).
 
 ```powershell
@@ -86,8 +91,9 @@ npm run check        # lint + type-check + tests, no keys needed
 npm run dev          # http://localhost:3000
 ```
 
-The app starts without any keys; pages that need Supabase show which variables are missing
-(see http://localhost:3000/setup). To connect a real Supabase project:
+The app starts without any keys. The landing page, the browser sandbox (http://localhost:3000/sandbox) and
+the demo work straight away; pages that need Supabase say which variables are missing or wrong, and
+http://localhost:3000/setup tests the whole connection. To connect a real Supabase project:
 
 ```powershell
 Copy-Item .env.example .env.local
@@ -96,8 +102,9 @@ notepad .env.local   # fill in your own keys
 
 Then follow [SETUP_STEPS.md](SETUP_STEPS.md). The **Supabase only** path (no Stripe, no email) walks
 through creating the project, running the SQL migrations in `supabase/migrations/` in the SQL Editor,
-turning off **Confirm email**, enabling anonymous sign-ins, setting the Site URL and redirect URLs, and
-deploying to Vercel. Payments are an optional later part.
+turning off **Confirm email**, optionally enabling anonymous sign-ins, and setting the Site URL and redirect
+URLs. To put it online, follow [DEPLOY_AWS.md](DEPLOY_AWS.md) (one EC2 server and a `.click` domain) or the
+Vercel part of SETUP_STEPS.md. Payments are an optional later part.
 
 ### Scripts
 
@@ -119,7 +126,7 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 NEXT_PUBLIC_APP_URL=
-CRON_SECRET=                   # protects the daily sandbox cleanup
+CRON_SECRET=                   # protects the daily online sandbox cleanup
 PAYMENTS_ENABLED=              # optional; "true" turns on Stripe (default off)
 STRIPE_SECRET_KEY=             # only with payments on
 STRIPE_WEBHOOK_SECRET=         # only with payments on
@@ -132,8 +139,9 @@ With payments off (the default), no Stripe variable is needed and Stripe is neve
 ## Architecture
 
 ```
-Browser (phone)                     Next.js on Vercel                          Supabase / Stripe
-───────────────                     ─────────────────                          ─────────────────
+Browser (phone)                     Next.js (EC2 + Caddy, or Vercel)           Supabase / Stripe
+───────────────                     ────────────────────────────────           ─────────────────
+Browser sandbox (/sandbox): rules, formats and bracket engine run in the page; saved in localStorage only
 Public page, captain page  ──read──────────────────────────────────────────▶  Postgres (RLS: public read)
   └─ Realtime subscription ◀──────────── Postgres Changes ───────────────────  Realtime
 Forms (organizer, captain) ──POST──▶ Route handlers
@@ -146,7 +154,7 @@ Registration ──────────────────────�
                                       ├─ payments off ──▶ register_free_team() (locks tournament)
                                       └─ payments on ───▶ Stripe Checkout (destination charge)
 Stripe ──── webhook (signed) ──────▶ /api/stripe/webhook ──▶ confirm_team_payment()   (404 when off)
-Vercel Cron (daily, CRON_SECRET) ──▶ /api/cron/cleanup ──▶ delete sandbox data older than 24 hours
+Cron (daily, CRON_SECRET) ────────▶ /api/cron/cleanup ──▶ delete online sandbox data older than 24 hours
 ```
 
 - **All tournament logic is pure TypeScript** in `src/lib/` (no I/O), so it runs in tests, in the demo
@@ -156,8 +164,15 @@ Vercel Cron (daily, CRON_SECRET) ──▶ /api/cron/cleanup ──▶ delete sa
   There are no write policies; every write goes through a route handler that authorizes the caller and
   then uses the service role.
 - **Captains have no account:** a 256-bit token in their private link; only its SHA-256 hash is stored.
-- **Sandbox organizers** are real Supabase users (anonymous sign-ins), so they exercise the same RLS,
-  routes and SQL as everyone else. Their limits are enforced by the API and by database constraints.
+- **The browser sandbox** keeps one tournament in localStorage and runs it through the same formats and
+  `applyScoreChange()` as the server, so its pools, brackets and score rules are the real ones. Nothing in
+  it is sent to the server, so it cannot touch real tournaments.
+- **Online sandbox organizers** (optional) are real Supabase users (anonymous sign-ins), so they exercise
+  the same RLS, routes and SQL as everyone else. Their limits are enforced by the API and by database
+  constraints.
+- **Configuration is checked, not assumed:** `src/lib/env.ts` trims a copied `/rest/v1` from the Supabase
+  URL, rejects a dashboard link or the app's own address, and refuses the secret key in the public
+  variable, so a wrong value gets a clear message instead of a 404 deep inside a request.
 
 ### Project structure
 
@@ -171,16 +186,19 @@ Vercel Cron (daily, CRON_SECRET) ──▶ /api/cron/cleanup ──▶ delete sa
 | `src/lib/registration/` | Free and paid registration paths |
 | `src/lib/payments.ts` | The `PAYMENTS_ENABLED` decision point |
 | `src/lib/rate-limit.ts` | Per-IP rate limits |
-| `src/lib/sandbox.ts`, `src/lib/cleanup/` | Sandbox limits and the daily cleanup |
+| `src/lib/local-sandbox/` | The browser sandbox: one tournament in localStorage, run by the real engine |
+| `src/lib/sandbox.ts`, `src/lib/cleanup/` | Online sandbox limits and the daily cleanup |
+| `src/lib/env.ts`, `src/lib/setup/` | Environment variable checks and the `/setup` connection test |
 | `src/lib/stripe/` | Stripe client, idempotent webhook handler, Connect onboarding |
 | `src/lib/scores/` | Captain and organizer score authorization |
 | `src/app/` | Pages and API route handlers (`/t/[slug]`, `/captain/[token]`, `/dashboard`, `/api/...`) |
 | `supabase/migrations/` | SQL to paste into the Supabase SQL Editor, in order |
+| `deploy/` | Caddy config and the update script for the AWS server |
 | `src/test/db/` | Runs the real migrations in PGlite to test RLS and the SQL functions |
 
 ## Testing
 
-`npm test` runs 401 tests in about 15 seconds with no keys, network or Docker. GitHub Actions runs
+`npm test` runs 426 tests in about 15 seconds with no keys, network or Docker. GitHub Actions runs
 `npm run check` on every push.
 
 - **Rules and formats:** set validation edge cases (deuce, deciding set, best-of-1); byes, odd team counts,
@@ -195,6 +213,11 @@ Vercel Cron (daily, CRON_SECRET) ──▶ /api/cron/cleanup ──▶ delete sa
   including two captains reporting the same set at once.
 - **Both payment modes:** with payments off, registration never touches Stripe and the webhook and
   Connect routes return 404; with payments on, registration goes to Stripe Checkout as before.
+- **Browser sandbox:** adding and filling teams, the start rules, refused scores, playoffs appearing once
+  pools finish, both formats played to a champion, clearing a score reopening a finished tournament, and
+  storage that is unreadable, full or blocked.
+- **Configuration:** wrong Supabase URLs and swapped keys are caught; the setup check is run against a fake
+  Supabase that is healthy, unreachable, rejects a key or misses a migration.
 - **Routes:** sign-up signs in straight away, the sandbox route creates a sandbox organizer, rate limits
   return 429 before any work is done, and the cleanup route refuses requests without `CRON_SECRET`.
 - **Payments:** webhook signature verification (wrong secret, tampered body), event idempotency and retry
@@ -203,7 +226,8 @@ Vercel Cron (daily, CRON_SECRET) ──▶ /api/cron/cleanup ──▶ delete sa
 ## Security notes
 
 - Secrets are only read from environment variables; the service-role and Stripe keys are only used in
-  `server-only` modules. Live Stripe keys are rejected.
+  `server-only` modules. Live Stripe keys are rejected, and so is a service-role key put in the public
+  `NEXT_PUBLIC_SUPABASE_ANON_KEY` variable. `/setup` names problems but never shows a value.
 - Per-IP rate limits (stored in Postgres, IPs hashed) on registration, captain score reports, the captain
   link claim, sign-up, sign-in and the sandbox. Supabase's own auth rate limits apply on top.
 - The cleanup route requires `Authorization: Bearer <CRON_SECRET>` and refuses to run if it is not set.
@@ -221,8 +245,9 @@ email notifications and real-money payments.
 
 ## Demo
 
-Run the app and open `/demo` for a keyless, simulated tournament, or pick **Create a tournament** →
-**Continue without an account** once Supabase is connected. Deployment steps for Vercel are in
-[SETUP_STEPS.md](SETUP_STEPS.md#part-d--deploy-to-vercel-supabase-only).
+Run the app and pick **Create a Tournament** → **Continue without an account** (or open `/sandbox`) for a
+practice tournament that needs no keys, or `/demo` for a simulated one. Deployment steps are in
+[DEPLOY_AWS.md](DEPLOY_AWS.md) (AWS) and
+[SETUP_STEPS.md](SETUP_STEPS.md#part-d--deploy-to-vercel-supabase-only) (Vercel).
 
 _Add a live link here once the app is deployed._
