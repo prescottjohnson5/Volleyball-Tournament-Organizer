@@ -6,8 +6,11 @@ import type { TournamentView, ViewMatch } from "@/lib/view";
 
 type Row = { a: string; b: string };
 
+/** Saves every set of a match and returns an error message to show, or null on success. */
+export type SaveMatchSets = (matchId: string, sets: { a: number; b: number }[]) => Promise<string | null>;
+
 /** Organizer score editor: replaces every set of a match. Saving an empty list clears the match. */
-export function OverrideScores({ match, view, onSaved }: { match: ViewMatch; view: TournamentView; onSaved: () => void }) {
+export function OverrideScores({ match, view, onSave }: { match: ViewMatch; view: TournamentView; onSave: SaveMatchSets }) {
   const rules = createRuleset(view.tournament.environment, { bestOf: view.tournament.bestOf as BestOf });
   const initialRows = (): Row[] => match.sets.map((s) => ({ a: String(s.a), b: String(s.b) }));
   const [editing, setEditing] = useState(false);
@@ -35,19 +38,13 @@ export function OverrideScores({ match, view, onSaved }: { match: ViewMatch; vie
   async function save(sets: { a: number; b: number }[]) {
     setBusy(true);
     setError(null);
-    const response = await fetch(`/api/tournaments/${view.tournament.id}/matches/${match.id}/sets`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sets }),
-    });
-    const result = (await response.json().catch(() => ({}))) as { error?: string };
+    const failure = await onSave(match.id, sets);
     setBusy(false);
-    if (!response.ok) {
-      setError(result.error ?? "Could not save the score.");
+    if (failure) {
+      setError(failure);
       return;
     }
     setEditing(false);
-    onSaved();
   }
 
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {

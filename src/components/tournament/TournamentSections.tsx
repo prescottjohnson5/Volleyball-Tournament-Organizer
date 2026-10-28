@@ -61,12 +61,15 @@ function TeamsList({ view }: { view: TournamentView }) {
   );
 }
 
-/** Matches, teams, standings and bracket, one tab at a time. */
-export function TournamentSections({ view }: { view: TournamentView }) {
+/**
+ * Matches, teams, standings and bracket, one tab at a time. `matchesContent` replaces the read-only match
+ * list, for example with score entry in the browser sandbox.
+ */
+export function TournamentSections({ view, matchesContent }: { view: TournamentView; matchesContent?: React.ReactNode }) {
   const hasPools = view.teams.some((t) => t.pool);
   const started = view.matches.length > 0;
   const tabs = [
-    { id: "matches", label: "Matches", content: <LiveMatchList view={view} /> },
+    { id: "matches", label: "Matches", content: matchesContent ?? <LiveMatchList view={view} /> },
     { id: "teams", label: `Teams (${view.teams.length})`, content: <TeamsList view={view} /> },
     ...(hasPools ? [{ id: "standings", label: "Standings", content: <StandingsTable view={view} /> }] : []),
     {

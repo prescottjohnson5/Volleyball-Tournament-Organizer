@@ -11,7 +11,13 @@ import { FORMAT_LABELS } from "@/lib/tournaments/labels";
 
 // showFee is false when payments are off: the fee field is hidden and no fee is sent.
 // maxTeamsLimit is lower for sandbox organizers.
-type Props = { showFee: boolean; maxTeamsLimit?: number } & (
+// save replaces the API call (the browser sandbox saves locally); it returns an error message or null.
+type Props = {
+  showFee: boolean;
+  maxTeamsLimit?: number;
+  save?: (input: TournamentInput) => Promise<string | null>;
+  cancelHref?: string;
+} & (
   | { mode: "create"; initial?: undefined; tournamentId?: undefined }
   | { mode: "edit"; initial: TournamentInput; tournamentId: string }
 );
@@ -24,7 +30,7 @@ const FORMAT_DESCRIPTIONS: Record<TournamentInput["format"], string> = {
   double_elim: "One bracket from the start. A team is out after its second loss.",
 };
 
-export function TournamentForm({ mode, initial, tournamentId, showFee, maxTeamsLimit = 64 }: Props) {
+export function TournamentForm({ mode, initial, tournamentId, showFee, maxTeamsLimit = 64, save, cancelHref = "/" }: Props) {
   const router = useRouter();
   const [name, setName] = useState(initial?.name ?? "");
   const [eventDate, setEventDate] = useState(initial?.eventDate ?? "");
@@ -75,6 +81,12 @@ export function TournamentForm({ mode, initial, tournamentId, showFee, maxTeamsL
     };
 
     setBusy(true);
+    if (save) {
+      const failure = await save(body);
+      setBusy(false);
+      if (failure) setError(failure);
+      return;
+    }
     const response = await fetch(mode === "create" ? "/api/tournaments" : `/api/tournaments/${tournamentId}`, {
       method: mode === "create" ? "POST" : "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -244,7 +256,7 @@ export function TournamentForm({ mode, initial, tournamentId, showFee, maxTeamsL
         )}
         <div className="flex flex-col-reverse items-stretch gap-3 sm:flex-row sm:items-center">
           {mode === "create" && (
-            <Link href="/" className="btn-secondary sm:w-auto">
+            <Link href={cancelHref} className="btn-secondary sm:w-auto">
               Cancel
             </Link>
           )}
