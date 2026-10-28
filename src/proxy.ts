@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { missingEnv } from "@/lib/env";
+import { envProblems, getSupabasePublicEnv, SUPABASE_SERVER_VARS } from "@/lib/env";
 import type { Database } from "@/lib/supabase/database.types";
 
 /**
@@ -8,18 +8,18 @@ import type { Database } from "@/lib/supabase/database.types";
  * /dashboard. Public pages (tournament view, registration, captain links) do not run this.
  */
 export async function proxy(request: NextRequest) {
-  // Without Supabase keys, show the setup page instead of the dashboard.
-  if (missingEnv(["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY"]).length > 0) {
-    return request.nextUrl.pathname.startsWith("/dashboard")
-      ? NextResponse.rewrite(new URL("/setup", request.url))
-      : NextResponse.next({ request });
+  // Without a working Supabase configuration nobody can sign in. Send dashboard visitors to the log-in
+  // page, which explains this and offers the browser sandbox instead.
+  if (envProblems(SUPABASE_SERVER_VARS).length > 0) {
+    return request.nextUrl.pathname.startsWith("/dashboard") ? redirectToLogin(request) : NextResponse.next({ request });
   }
 
   let response = NextResponse.next({ request });
+  const { url, anonKey } = getSupabasePublicEnv();
 
   const supabase = createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    url,
+    anonKey,
     {
       cookies: {
         getAll() {
@@ -39,14 +39,16 @@ export async function proxy(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const signedIn = Boolean(data?.claims?.sub);
 
-  if (!signedIn && request.nextUrl.pathname.startsWith("/dashboard")) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    url.search = `?next=${encodeURIComponent(request.nextUrl.pathname)}`;
-    return NextResponse.redirect(url);
-  }
+  if (!signedIn && request.nextUrl.pathname.startsWith("/dashboard")) return redirectToLogin(request);
 
   return response;
+}
+
+function redirectToLogin(request: NextRequest) {
+  const url = request.nextUrl.clone();
+  url.pathname = "/login";
+  url.search = `?next=${encodeURIComponent(request.nextUrl.pathname)}`;
+  return NextResponse.redirect(url);
 }
 
 export const config = {

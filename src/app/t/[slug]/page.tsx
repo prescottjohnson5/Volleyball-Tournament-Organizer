@@ -8,7 +8,7 @@ import { LiveTournament } from "@/components/tournament/LiveTournament";
 import { getOrganizer } from "@/lib/auth";
 import { getPublicTournament } from "@/lib/data/public";
 import { loadTournamentView } from "@/lib/data/tournament-view";
-import { missingEnv } from "@/lib/env";
+import { envProblems, SUPABASE_PUBLIC_VARS } from "@/lib/env";
 import { createSupabasePublicClient } from "@/lib/supabase/public";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  if (missingEnv(["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY"]).length > 0) return {};
+  if (envProblems(SUPABASE_PUBLIC_VARS).length > 0) return {};
   const tournament = await getPublicTournament((await params).slug);
   if (!tournament) return {};
   const description = `Live results for ${tournament.name}`;
@@ -25,8 +25,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 /** Public, read-only tournament page. No account needed; updates live over Supabase Realtime. */
 export default async function PublicTournamentPage({ params }: Props) {
-  const missing = missingEnv(["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY"]);
-  if (missing.length > 0) return <SetupNotice missing={missing} />;
+  const missing = envProblems(SUPABASE_PUBLIC_VARS);
+  if (missing.length > 0) return <SetupNotice problems={missing} />;
 
   const { slug } = await params;
   const db = createSupabasePublicClient();

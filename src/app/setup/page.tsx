@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SetupNotice } from "@/components/SetupNotice";
-import { isPaymentsEnabled, missingEnv } from "@/lib/env";
+import { envProblems, isPaymentsEnabled } from "@/lib/env";
 
 export const metadata: Metadata = { title: "Setup" };
 export const dynamic = "force-dynamic";
@@ -12,7 +12,7 @@ const PAYMENTS = ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"] as const;
 
 /** Lists which environment variables are still missing. Never shows their values. */
 export default function SetupPage() {
-  const missing = missingEnv(isPaymentsEnabled() ? [...REQUIRED, ...PAYMENTS] : REQUIRED);
+  const missing = envProblems(isPaymentsEnabled() ? [...REQUIRED, ...PAYMENTS] : REQUIRED);
   if (missing.length === 0) {
     return (
       <div className="card space-y-2">
@@ -23,5 +23,5 @@ export default function SetupPage() {
       </div>
     );
   }
-  return <SetupNotice missing={missing} />;
+  return <SetupNotice problems={missing} />;
 }

@@ -1,5 +1,5 @@
 import type Stripe from "stripe";
-import { getStripeWebhookSecrets, MissingEnvError } from "@/lib/env";
+import { EnvError, getStripeWebhookSecrets } from "@/lib/env";
 import { jsonError } from "@/lib/http";
 import { notFoundUnlessPaymentsEnabled } from "@/lib/payments";
 import { getStripe } from "@/lib/stripe/client";
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
       }
     }
   } catch (error) {
-    if (error instanceof MissingEnvError) return jsonError(503, error.message);
+    if (error instanceof EnvError) return jsonError(503, error.message);
     throw error;
   }
   if (!event) return jsonError(400, "Invalid Stripe signature.");
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
   } catch (error) {
     // Log identifiers only: event payloads contain customer details.
     console.error(`Stripe webhook ${event.id} (${event.type}) failed:`, error instanceof Error ? error.message : error);
-    if (error instanceof MissingEnvError) return jsonError(503, error.message);
+    if (error instanceof EnvError) return jsonError(503, error.message);
     return jsonError(500, "Webhook processing failed.");
   }
 }

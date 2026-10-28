@@ -1,6 +1,6 @@
 import "server-only";
 import { createHash } from "node:crypto";
-import { MissingEnvError } from "@/lib/env";
+import { EnvError } from "@/lib/env";
 import { HttpError } from "@/lib/http";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
@@ -68,7 +68,7 @@ export async function enforceRateLimit(
   try {
     hits = await count(`${name}:${ipHash}`, windowSeconds);
   } catch (error) {
-    if (error instanceof MissingEnvError) throw error;
+    if (error instanceof EnvError) throw error;
     console.error(`Rate limit check failed for ${name}:`, error instanceof Error ? error.message : error);
     return;
   }

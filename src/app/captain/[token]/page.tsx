@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { SandboxBanner } from "@/components/SandboxBanner";
 import { SetupNotice } from "@/components/SetupNotice";
 import { loadTournamentView } from "@/lib/data/tournament-view";
-import { missingEnv } from "@/lib/env";
+import { envProblems, SUPABASE_SERVER_VARS } from "@/lib/env";
 import { findCaptainByToken } from "@/lib/scores/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { CaptainPanel } from "./CaptainPanel";
@@ -12,8 +12,8 @@ export const dynamic = "force-dynamic";
 
 /** Private page for a team captain, reached through the secret link shown after payment. */
 export default async function CaptainPage({ params }: { params: Promise<{ token: string }> }) {
-  const missing = missingEnv(["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY"]);
-  if (missing.length > 0) return <SetupNotice missing={missing} />;
+  const missing = envProblems(SUPABASE_SERVER_VARS);
+  if (missing.length > 0) return <SetupNotice problems={missing} />;
 
   const { token } = await params;
   const db = createSupabaseAdminClient();

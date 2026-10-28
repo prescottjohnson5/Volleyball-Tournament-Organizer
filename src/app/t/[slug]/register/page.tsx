@@ -4,7 +4,7 @@ import { BackLink } from "@/components/BackLink";
 import { SandboxBanner } from "@/components/SandboxBanner";
 import { SetupNotice } from "@/components/SetupNotice";
 import { countPublicPaidTeams, getPublicTournament } from "@/lib/data/public";
-import { missingEnv } from "@/lib/env";
+import { envProblems, SUPABASE_PUBLIC_VARS } from "@/lib/env";
 import { formatCents } from "@/lib/money";
 import { collectsFees } from "@/lib/payments";
 import { createRuleset, describeRuleset, type BestOf } from "@/lib/rules/ruleset";
@@ -23,8 +23,8 @@ export default async function RegisterPage({
   params: Promise<{ slug: string }>;
   searchParams: Promise<{ cancelled?: string }>;
 }) {
-  const missing = missingEnv(["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY"]);
-  if (missing.length > 0) return <SetupNotice missing={missing} />;
+  const missing = envProblems(SUPABASE_PUBLIC_VARS);
+  if (missing.length > 0) return <SetupNotice problems={missing} />;
 
   const { slug } = await params;
   const { cancelled } = await searchParams;
@@ -38,7 +38,7 @@ export default async function RegisterPage({
   // Payments go to the organizer's Stripe account, so paid registration waits until it is ready.
   const paymentsReady =
     !fee ||
-    missingEnv(["SUPABASE_SERVICE_ROLE_KEY"]).length > 0 ||
+    envProblems(["SUPABASE_SERVICE_ROLE_KEY"]).length > 0 ||
     (await getPayoutAccount(createSupabaseAdminClient(), tournament.organizer_id)) !== null;
 
   return (

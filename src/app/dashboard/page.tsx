@@ -32,7 +32,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           }
         />
       ) : (
-        <SetupNotice missing={["STRIPE_SECRET_KEY"]} />
+        <SetupNotice problems={[{ name: "STRIPE_SECRET_KEY", problem: "Not set. It is needed because PAYMENTS_ENABLED is true." }]} />
       )}
       <BackLink href="/">Home</BackLink>
       <div className="flex flex-wrap items-end justify-between gap-4">

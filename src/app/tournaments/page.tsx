@@ -6,7 +6,7 @@ import { ListRowLink, TournamentList } from "@/components/tournament/TournamentL
 import { getOrganizer } from "@/lib/auth";
 import { listOrganizerTournaments } from "@/lib/data/dashboard";
 import { listPublicTournaments } from "@/lib/data/public";
-import { missingEnv } from "@/lib/env";
+import { envProblems, SUPABASE_PUBLIC_VARS } from "@/lib/env";
 import { matchesSearch, normalizeSearch, sortForBrowsing } from "@/lib/tournaments/browse";
 
 export const metadata: Metadata = { title: "Find a tournament" };
@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 /** "View a tournament": search and pick a tournament, then open its page. */
 export default async function BrowseTournamentsPage({ searchParams }: { searchParams: Promise<{ q?: string | string[] }> }) {
   const query = normalizeSearch((await searchParams).q);
-  const missing = missingEnv(["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY"]);
+  const missing = envProblems(SUPABASE_PUBLIC_VARS);
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">
@@ -36,7 +36,7 @@ export default async function BrowseTournamentsPage({ searchParams }: { searchPa
         </form>
       </div>
 
-      {missing.length > 0 ? <SetupNotice missing={missing} /> : <Results query={query} />}
+      {missing.length > 0 ? <SetupNotice problems={missing} /> : <Results query={query} />}
 
       <section aria-labelledby="sample" className="space-y-2">
         <h2 id="sample" className="text-sm font-semibold tracking-wide text-ink-subtle uppercase">

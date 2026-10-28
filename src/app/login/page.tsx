@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
 import { SandboxHint } from "@/components/SandboxHint";
 import { SetupNotice } from "@/components/SetupNotice";
-import { missingEnv } from "@/lib/env";
+import { envProblems, SUPABASE_PUBLIC_VARS } from "@/lib/env";
 import { AuthForm } from "./AuthForm";
 
 export const metadata: Metadata = { title: "Log in" };
 export const dynamic = "force-dynamic";
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; error?: string }> }) {
-  const missing = missingEnv(["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY"]);
-  if (missing.length > 0) return <SetupNotice missing={missing} />;
+  const missing = envProblems(SUPABASE_PUBLIC_VARS);
+  if (missing.length > 0) return <SetupNotice problems={missing} />;
   const { next, error } = await searchParams;
   return (
     <div className="space-y-6 pt-6">

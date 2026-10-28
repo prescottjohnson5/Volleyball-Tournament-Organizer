@@ -1,17 +1,26 @@
-import type { EnvName } from "@/lib/env";
+import Link from "next/link";
+import type { EnvProblem } from "@/lib/env";
 
-/** Shown instead of a page when environment variables it needs are not configured yet. */
-export function SetupNotice({ missing }: { missing: readonly EnvName[] }) {
+/**
+ * Shown instead of a page when the environment variables it needs are missing or wrong. Names the
+ * variables and what is wrong with them, never their values.
+ */
+export function SetupNotice({ problems }: { problems: readonly EnvProblem[] }) {
   return (
-    <div className="notice">
-      <h2 className="text-lg font-semibold text-sun-100">Setup needed</h2>
-      <p className="mt-1 text-sm text-sun-100">
-        This page needs the following environment variables. Add them to <code>.env.local</code> and restart{" "}
-        <code>npm run dev</code>. See <code>SETUP_STEPS.md</code> for step-by-step instructions.
-      </p>
-      <ul className="mt-2 list-inside list-disc font-mono text-sm text-sun-100">
-        {missing.map((name) => (
-          <li key={name}>{name}</li>
+    <div className="notice space-y-3">
+      <div>
+        <h2 className="text-lg font-semibold text-sun-100">This part of the site is not connected yet</h2>
+        <p className="mt-1 text-sm text-sun-100">
+          It needs a database (Supabase), and these settings are missing or wrong. Fix them in <code>.env.local</code> (or your
+          server&rsquo;s environment settings), then restart the app. The <Link href="/setup" className="underline">setup check</Link>{" "}
+          tests the whole connection.
+        </p>
+      </div>
+      <ul className="space-y-1.5 text-sm text-sun-100">
+        {problems.map(({ name, problem }) => (
+          <li key={name}>
+            <code className="font-semibold">{name}</code>: {problem}
+          </li>
         ))}
       </ul>
     </div>
