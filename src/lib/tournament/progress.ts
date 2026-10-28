@@ -1,8 +1,8 @@
 import { findInvalidatedMatches, resolveMatches } from "@/lib/bracket/engine";
 import { UserFacingError } from "@/lib/errors";
 import type { IdFactory, MatchSpec, ResolvedMatch, SeededTeam } from "@/lib/bracket/types";
-import { getFormat, type PlannedTeam } from "@/lib/formats";
-import { validateMatchSets, type SetScore } from "@/lib/rules/ruleset";
+import { getFormat, type PlannedTeam, type TournamentFormat } from "@/lib/formats";
+import { validateMatchSets, type Ruleset, type SetScore } from "@/lib/rules/ruleset";
 import type { MatchRow, MatchSetRow, TeamRow, TournamentRow } from "@/lib/supabase/database.types";
 import {
   rowToSpec,
@@ -77,38 +77,47 @@ export interface ScoreEdit {
   replace?: SetRecord[];
 }
 
+/** Everything the score rules look at: the format, the teams and the schedule so far. */
+export interface ScoreState {
+  format: TournamentFormat;
+  formatOptions: unknown;
+  rules: Ruleset;
+  teams: readonly PlannedTeam[];
+  specs: readonly MatchSpec[];
+  sets: ReadonlyMap<string, readonly SetScore[]>;
+}
+
 /**
- * Applies a score edit and recomputes the whole tournament: derived match state, follow-up
- * matches (e.g. playoffs once pools finish) and completion. Throws TournamentRuleError when the
- * edit would change the teams of a later match that already has scores.
+ * The rule checks and recomputation behind every score change, shared by the server (planScoreEdit) and
+ * the browser sandbox. `matchSets` is the full list of sets for the match after the change; `appending`
+ * is true for a captain report, which may not touch a decided match. Returns every match (including any
+ * follow-up matches now due, such as playoffs once pools finish) and the champion, if decided.
  */
-export function planScoreEdit(snapshot: ProgressSnapshot, edit: ScoreEdit, ids: IdFactory, now: Date): {
-  changes: CommitChanges;
-  matches: ResolvedMatch[];
-} {
-  const rules = rulesetFor(snapshot.tournament);
-  const format = getFormat(snapshot.tournament.format);
-  const specs: MatchSpec[] = snapshot.matches.map(rowToSpec);
-  const oldSets = setsByMatch(snapshot.sets);
-  const newSets = new Map(oldSets);
+export function applyScoreChange(
+  state: ScoreState,
+  matchId: string,
+  matchSets: readonly SetScore[],
+  { appending }: { appending: boolean },
+  ids: IdFactory,
+): { sets: Map<string, SetScore[]>; newSpecs: MatchSpec[]; matches: ResolvedMatch[]; champion: string | null } {
+  const { format, formatOptions, rules, teams } = state;
+  const specs = [...state.specs];
+  const newSets = new Map<string, SetScore[]>([...state.sets].map(([id, list]) => [id, [...list]]));
+  newSets.set(matchId, [...matchSets]);
 
-  const toScores = (records: SetRecord[]): SetScore[] => records.map((r) => ({ a: r.score_a, b: r.score_b }));
-  if (edit.replace) newSets.set(edit.matchId, toScores(edit.replace));
-  if (edit.append) newSets.set(edit.matchId, [...(oldSets.get(edit.matchId) ?? []), ...toScores(edit.append)]);
-
-  const before = resolveMatches(specs, oldSets, rules);
-  const target = before.find((m) => m.id === edit.matchId);
+  const before = resolveMatches(specs, state.sets, rules);
+  const target = before.find((m) => m.id === matchId);
   if (!target) throw new TournamentRuleError("Match not found.");
   if (!["ready", "in_progress", "completed"].includes(target.status)) {
     throw new TournamentRuleError("Scores can only be entered once both teams are known.");
   }
-  if (edit.append && target.status === "completed") {
+  if (appending && target.status === "completed") {
     throw new TournamentRuleError("This match is already decided. Ask the organizer to correct it.");
   }
   if (target.phase === "pool" && specs.some((s) => s.phase === "bracket")) {
     throw new TournamentRuleError("Pool results are locked once the playoff bracket has been created.");
   }
-  const validation = validateMatchSets(rules, newSets.get(edit.matchId) ?? []);
+  const validation = validateMatchSets(rules, matchSets);
   if (!validation.ok) throw new TournamentRuleError(validation.error);
 
   let after = resolveMatches(specs, newSets, rules);
@@ -122,12 +131,45 @@ export function planScoreEdit(snapshot: ProgressSnapshot, edit: ScoreEdit, ids: 
 
   const newSpecs: MatchSpec[] = [];
   for (;;) {
-    const followUps = format.createFollowUpMatches({ teams: snapshot.teams, matches: after, rules }, snapshot.tournament.format_options, ids);
+    const followUps = format.createFollowUpMatches({ teams, matches: after, rules }, formatOptions, ids);
     if (followUps.length === 0) break;
     newSpecs.push(...followUps);
     specs.push(...followUps);
     after = resolveMatches(specs, newSets, rules);
   }
+
+  return { sets: newSets, newSpecs, matches: after, champion: format.champion({ teams, matches: after, rules }) };
+}
+
+/**
+ * Applies a score edit and recomputes the whole tournament: derived match state, follow-up
+ * matches (e.g. playoffs once pools finish) and completion. Throws TournamentRuleError when the
+ * edit would change the teams of a later match that already has scores.
+ */
+export function planScoreEdit(snapshot: ProgressSnapshot, edit: ScoreEdit, ids: IdFactory, now: Date): {
+  changes: CommitChanges;
+  matches: ResolvedMatch[];
+} {
+  const oldSets = setsByMatch(snapshot.sets);
+  const toScores = (records: SetRecord[]): SetScore[] => records.map((r) => ({ a: r.score_a, b: r.score_b }));
+  const matchSets = edit.replace
+    ? toScores(edit.replace)
+    : [...(oldSets.get(edit.matchId) ?? []), ...toScores(edit.append ?? [])];
+
+  const { newSpecs, matches: after, champion } = applyScoreChange(
+    {
+      format: getFormat(snapshot.tournament.format),
+      formatOptions: snapshot.tournament.format_options,
+      rules: rulesetFor(snapshot.tournament),
+      teams: snapshot.teams,
+      specs: snapshot.matches.map(rowToSpec),
+      sets: oldSets,
+    },
+    edit.matchId,
+    matchSets,
+    { appending: Boolean(edit.append) },
+    ids,
+  );
 
   const existing = new Map(snapshot.matches.map((m) => [m.id, m]));
   const newIds = new Set(newSpecs.map((s) => s.id));
@@ -140,7 +182,6 @@ export function planScoreEdit(snapshot: ProgressSnapshot, edit: ScoreEdit, ids: 
   if (edit.replace) changes.set_replacements = [{ match_id: edit.matchId, sets: edit.replace }];
   if (edit.append) changes.set_inserts = edit.append.map((record) => ({ ...record, match_id: edit.matchId }));
 
-  const champion = format.champion({ teams: snapshot.teams, matches: after, rules });
   if (champion && snapshot.tournament.champion_team_id !== champion) {
     changes.tournament = { status: "completed", champion_team_id: champion, completed_at: now.toISOString() };
   } else if (!champion && snapshot.tournament.status === "completed") {
