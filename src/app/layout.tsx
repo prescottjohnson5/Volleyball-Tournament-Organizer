@@ -68,6 +68,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
         </header>
         <main className="mx-auto w-full max-w-5xl flex-1 px-4 pt-4 pb-16">{children}</main>
+        <footer className="border-t border-line">
+          <p className="mx-auto max-w-5xl px-4 py-6 text-sm text-ink-subtle">
+            Designed and built by <span className="font-semibold text-ink-muted">Prescott Johnson</span>
+          </p>
+        </footer>
       </body>
     </html>
   );
